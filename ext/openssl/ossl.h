@@ -194,6 +194,7 @@ extern VALUE dOSSL;
 #include "ossl_engine.h"
 #include "ossl_provider.h"
 #include "ossl_kdf.h"
+#include "ossl_hpke_ctx.h"
 
 void Init_openssl(void);
 
