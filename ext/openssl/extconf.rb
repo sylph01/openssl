@@ -210,6 +210,9 @@ have_func("EVP_MD_CTX_get_pkey_ctx(NULL)", evp_h)
 have_func("EVP_PKEY_eq(NULL, NULL)", evp_h)
 have_func("EVP_PKEY_dup(NULL)", evp_h)
 
+# added in 3.2.0
+have_header("openssl/hpke.h")
+
 Logging::message "=== Checking done. ===\n"
 
 # Append flags from environment variables.

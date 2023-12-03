@@ -39,6 +39,9 @@
 #include <openssl/dsa.h>
 #include <openssl/evp.h>
 #include <openssl/dh.h>
+#ifdef HAVE_OPENSSL_HPKE_H
+  #include <openssl/hpke.h>
+#endif
 
 #ifndef LIBRESSL_VERSION_NUMBER
 # define OSSL_IS_LIBRESSL 0

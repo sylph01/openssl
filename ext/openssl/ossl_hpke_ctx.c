@@ -6,7 +6,7 @@ VALUE cContext;
 static void
 ossl_hpke_ctx_free(void *ptr)
 {
-  // OSSL_HPKE_CTX_free(ptr);
+  OSSL_HPKE_CTX_free(ptr);
 }
 
 const rb_data_type_t ossl_hpke_ctx_type = {
