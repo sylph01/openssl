@@ -116,6 +116,7 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
   aadlen = RSTRING_LEN(aad);
   ptlen  = RSTRING_LEN(pt);
   ctlen = ptlen + 16; // block size is known to be at maximum 16 characters so use that
+  // TODO: use OSSL_HPKE_get_ciphertext_size
 
   ct_obj = rb_str_new(0, ctlen);
 
@@ -147,6 +148,48 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
   }
 
   return Qtrue;
+}
+
+VALUE
+ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
+{
+  VALUE pt_obj;
+  OSSL_HPKE_CTX *rctx;
+  size_t ptlen, aadlen, ctlen;
+
+  aadlen = RSTRING_LEN(aad);
+  ctlen  = RSTRING_LEN(ct);
+  ptlen = ctlen;
+
+  pt_obj = rb_str_new(0, ptlen);
+
+  GetHpkeCtx(self, rctx);
+
+  if (OSSL_HPKE_open(rctx, (unsigned char *)RSTRING_PTR(pt_obj), &ptlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(ct), ctlen) != 1) {
+    ossl_raise(eHPKEError, "could not open");
+  }
+
+  return pt_obj;
+}
+
+VALUE
+ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
+{
+  VALUE secret_obj;
+  OSSL_HPKE_CTX *ctx;
+  size_t labellen;
+
+  labellen = RSTRING_LEN(label);
+
+  secret_obj = rb_str_new(0, NUM2INT(secretlen));
+
+  GetHpkeCtx(self, ctx);
+
+  if (OSSL_HPKE_export(ctx, (unsigned char *)RSTRING_PTR(secret_obj), NUM2INT(secretlen), (unsigned char*)RSTRING_PTR(label), labellen) != 1) {
+    ossl_raise(eHPKEError, "could not export");
+  }
+
+  return secret_obj;
 }
 
 /* private */
@@ -192,7 +235,9 @@ Init_ossl_hpke_ctx(void)
   rb_define_method(cContext, "seal",  ossl_hpke_seal,  2);
 
   rb_define_method(cContext, "decap", ossl_hpke_decap, 3);
-  // rb_define_method(cContext, "open",  ossl_hpke_open,  2);
+  rb_define_method(cContext, "open",  ossl_hpke_open,  2);
+
+  rb_define_method(cContext, "export", ossl_hpke_export, 2);
 
   rb_define_alloc_func(cContext, ossl_hpke_ctx_alloc);
 }
