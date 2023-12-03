@@ -128,6 +128,27 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
   return ct_obj;
 }
 
+VALUE
+ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
+{
+  OSSL_HPKE_CTX *rctx;
+  EVP_PKEY *pkey;
+  size_t enclen;
+  size_t infolen;
+
+  GetHpkeCtx(self, rctx);
+  GetPKey(priv, pkey); // TODO: if priv was not a PKey then reject
+
+  enclen = RSTRING_LEN(enc);
+  infolen = RSTRING_LEN(info);
+
+  if (OSSL_HPKE_decap(rctx, (unsigned char *)RSTRING_PTR(enc), enclen, pkey, (unsigned char *)RSTRING_PTR(info), infolen) != 1) {
+    ossl_raise(eHPKEError, "could not decap");
+  }
+
+  return Qtrue;
+}
+
 /* private */
 static VALUE
 ossl_hpke_ctx_alloc(VALUE klass)
@@ -169,6 +190,9 @@ Init_ossl_hpke_ctx(void)
   rb_define_singleton_method(cContext, "new_receiver", ossl_hpke_ctx_new_receiver, 4);
   rb_define_method(cContext, "encap", ossl_hpke_encap, 2);
   rb_define_method(cContext, "seal",  ossl_hpke_seal,  2);
+
+  rb_define_method(cContext, "decap", ossl_hpke_decap, 3);
+  // rb_define_method(cContext, "open",  ossl_hpke_open,  2);
 
   rb_define_alloc_func(cContext, ossl_hpke_ctx_alloc);
 }
