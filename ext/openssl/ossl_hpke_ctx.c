@@ -85,7 +85,7 @@ VALUE
 ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 {
   VALUE enc_obj;
-  unsigned char enc[1000];
+  unsigned char enc[1024];
   size_t enclen;
   OSSL_HPKE_CTX *sctx;
   size_t publen;
@@ -119,7 +119,7 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
 {
   EVP_PKEY *pkey;
   VALUE pkey_obj;
-  unsigned char pub[128];
+  unsigned char pub[256];
   size_t publen;
   OSSL_HPKE_SUITE hpke_suite = {
     NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
