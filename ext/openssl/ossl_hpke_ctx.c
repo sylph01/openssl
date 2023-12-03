@@ -45,6 +45,42 @@ ossl_hpke_ctx_new(OSSL_HPKE_CTX *ctx)
   return obj;
 }
 
+VALUE
+ossl_hpke_ctx_new_sender(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
+{
+  OSSL_HPKE_CTX *sctx;
+  VALUE obj;
+  OSSL_HPKE_SUITE hpke_suite = {
+    NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
+  };
+
+  if((sctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_SENDER, NULL, NULL)) == NULL) {
+    ossl_raise(eHPKEError, "could not create ctx");
+  }
+
+  obj = ossl_hpke_ctx_new(sctx);
+
+  return obj;
+}
+
+VALUE
+ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
+{
+  OSSL_HPKE_CTX *sctx;
+  VALUE obj;
+  OSSL_HPKE_SUITE hpke_suite = {
+    NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
+  };
+
+  if((sctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_RECEIVER, NULL, NULL)) == NULL) {
+    ossl_raise(eHPKEError, "could not create ctx");
+  }
+
+  obj = ossl_hpke_ctx_new(sctx);
+
+  return obj;
+}
+
 /* private */
 static VALUE
 ossl_hpke_ctx_alloc(VALUE klass)
@@ -81,6 +117,9 @@ Init_ossl_hpke_ctx(void)
   eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
 
   rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
+
+  rb_define_singleton_method(cContext, "new_sender", ossl_hpke_ctx_new_sender, 4);
+  rb_define_singleton_method(cContext, "new_receiver", ossl_hpke_ctx_new_receiver, 4);
 
   rb_define_alloc_func(cContext, ossl_hpke_ctx_alloc);
 }
