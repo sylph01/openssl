@@ -2,6 +2,7 @@
 
 VALUE mHPKE;
 VALUE cContext;
+VALUE eHPKEError;
 
 static void
 ossl_hpke_ctx_free(void *ptr)
@@ -51,11 +52,35 @@ ossl_hpke_ctx_alloc(VALUE klass)
   return TypedData_Wrap_Struct(klass, &ossl_hpke_ctx_type, NULL);
 }
 
+/* HPKE module method */
+VALUE
+ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
+{
+  EVP_PKEY *pkey;
+  VALUE pkey_obj;
+  unsigned char pub[128];
+  size_t publen;
+  OSSL_HPKE_SUITE hpke_suite = {
+    NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
+  };
+
+  if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, NULL, 0, NULL, NULL)){
+    ossl_raise(eHPKEError, "could not keygen");
+  }
+
+  pkey_obj = ossl_pkey_new(pkey);
+
+  return pkey_obj;
+}
+
 void
 Init_ossl_hpke_ctx(void)
 {
   mHPKE = rb_define_module_under(mOSSL, "HPKE");
   cContext = rb_define_class_under(mHPKE, "Context", rb_cObject);
+  eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
+
+  rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
 
   rb_define_alloc_func(cContext, ossl_hpke_ctx_alloc);
 }
