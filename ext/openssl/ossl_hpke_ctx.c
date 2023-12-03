@@ -106,6 +106,28 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
   return enc_obj;
 }
 
+VALUE
+ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
+{
+  VALUE ct_obj;
+  OSSL_HPKE_CTX *sctx;
+  size_t ctlen, aadlen, ptlen;
+
+  aadlen = RSTRING_LEN(aad);
+  ptlen  = RSTRING_LEN(pt);
+  ctlen = ptlen + 16; // block size is known to be at maximum 16 characters so use that
+
+  ct_obj = rb_str_new(0, ctlen);
+
+  GetHpkeCtx(self, sctx);
+
+  if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(pt), ptlen) != 1) {
+    ossl_raise(eHPKEError, "could not seal");
+  }
+
+  return ct_obj;
+}
+
 /* private */
 static VALUE
 ossl_hpke_ctx_alloc(VALUE klass)
@@ -146,6 +168,7 @@ Init_ossl_hpke_ctx(void)
   rb_define_singleton_method(cContext, "new_sender", ossl_hpke_ctx_new_sender, 4);
   rb_define_singleton_method(cContext, "new_receiver", ossl_hpke_ctx_new_receiver, 4);
   rb_define_method(cContext, "encap", ossl_hpke_encap, 2);
+  rb_define_method(cContext, "seal",  ossl_hpke_seal,  2);
 
   rb_define_alloc_func(cContext, ossl_hpke_ctx_alloc);
 }
