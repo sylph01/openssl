@@ -81,6 +81,31 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id
   return obj;
 }
 
+VALUE
+ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
+{
+  VALUE enc_obj;
+  unsigned char enc[1000];
+  size_t enclen;
+  OSSL_HPKE_CTX *sctx;
+  size_t publen;
+  size_t infolen;
+
+  GetHpkeCtx(self, sctx);
+
+  enclen = sizeof(enc);
+  publen = RSTRING_LEN(pub);
+  infolen = RSTRING_LEN(info);
+
+  if (OSSL_HPKE_encap(sctx, enc, &enclen, (unsigned char*)RSTRING_PTR(pub), publen, (unsigned char*)RSTRING_PTR(pub), infolen) != 1) {
+    ossl_raise(eHPKEError, "could not encap");
+  }
+
+  enc_obj = rb_str_new_cstr((char *)enc);
+
+  return enc_obj;
+}
+
 /* private */
 static VALUE
 ossl_hpke_ctx_alloc(VALUE klass)
@@ -120,6 +145,7 @@ Init_ossl_hpke_ctx(void)
 
   rb_define_singleton_method(cContext, "new_sender", ossl_hpke_ctx_new_sender, 4);
   rb_define_singleton_method(cContext, "new_receiver", ossl_hpke_ctx_new_receiver, 4);
+  rb_define_method(cContext, "encap", ossl_hpke_encap, 2);
 
   rb_define_alloc_func(cContext, ossl_hpke_ctx_alloc);
 }
