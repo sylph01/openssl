@@ -118,7 +118,7 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
   rbdebug_print_hex(sctx->nonce, sctx->noncelen);
   rbdebug_print_hex(sctx->key, sctx->keylen);
 
-  enc_obj = rb_str_new_cstr((char *)enc);
+  enc_obj = rb_str_new((char *)enc, enclen);
 
   return enc_obj;
 }
