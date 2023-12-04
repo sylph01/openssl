@@ -107,9 +107,6 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
   publen = RSTRING_LEN(pub);
   infolen = RSTRING_LEN(info);
 
-  unsigned char ikme[32] = {0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-  OSSL_HPKE_CTX_set1_ikme(sctx, ikme, 32);
-
   if (OSSL_HPKE_encap(sctx, enc, &enclen, (unsigned char*)RSTRING_PTR(pub), publen, (unsigned char*)RSTRING_PTR(info), infolen) != 1) {
     ossl_raise(eHPKEError, "could not encap");
   }
@@ -143,7 +140,6 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
   rbdebug_print_hex(sctx->nonce, sctx->noncelen);
   rbdebug_print_hex(sctx->key, sctx->keylen);
 
-  // if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(pt), ptlen) != 1) {
   if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(pt), ptlen) != 1) {
     ossl_raise(eHPKEError, "could not seal");
   }
@@ -162,14 +158,8 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
   GetHpkeCtx(self, rctx);
   GetPKey(priv, pkey); // TODO: if priv was not a PKey then reject
 
-  // unsigned char ikme[32] = {0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-  // OSSL_HPKE_CTX_set1_ikme(rctx, ikme, 32);
-
   enclen = RSTRING_LEN(enc);
   infolen = RSTRING_LEN(info);
-
-  rb_p(enc);
-  rb_p(rb_sprintf("enclen: %ld\n", enclen));
 
   if (OSSL_HPKE_decap(rctx, (unsigned char *)RSTRING_PTR(enc), enclen, pkey, (unsigned char *)RSTRING_PTR(info), infolen) != 1) {
     ossl_raise(eHPKEError, "could not decap");
@@ -253,9 +243,7 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
   };
   publen = 256;
 
-  unsigned char ikm[32] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-
-  if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, ikm, 32, NULL, NULL)){
+  if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, NULL, 0, NULL, NULL)){
     ossl_raise(eHPKEError, "could not keygen");
   }
 
