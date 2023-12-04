@@ -4,6 +4,16 @@ VALUE mHPKE;
 VALUE cContext;
 VALUE eHPKEError;
 
+void
+rbdebug_print_hex(const unsigned char *str, size_t len)
+{
+  VALUE rbstr;
+
+  rbstr = rb_str_new((char *)str, len);
+
+  rb_p(rb_funcall(rbstr, rb_intern("unpack1"), 1, rb_str_new_cstr("H*")));
+}
+
 static void
 ossl_hpke_ctx_free(void *ptr)
 {
@@ -100,12 +110,13 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
   unsigned char ikme[32] = {0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
   OSSL_HPKE_CTX_set1_ikme(sctx, ikme, 32);
 
-  if (OSSL_HPKE_encap(sctx, enc, &enclen, (unsigned char*)RSTRING_PTR(pub), publen, (unsigned char*)RSTRING_PTR(pub), infolen) != 1) {
+  if (OSSL_HPKE_encap(sctx, enc, &enclen, (unsigned char*)RSTRING_PTR(pub), publen, (unsigned char*)RSTRING_PTR(info), infolen) != 1) {
     ossl_raise(eHPKEError, "could not encap");
   }
 
-  rb_p(rb_sprintf("ss: %s", sctx->shared_secret));
-  rb_p(rb_sprintf("sl: %ld", sctx->shared_secretlen));
+  rbdebug_print_hex(sctx->shared_secret, sctx->shared_secretlen);
+  rbdebug_print_hex(sctx->nonce, sctx->noncelen);
+  rbdebug_print_hex(sctx->key, sctx->keylen);
 
   enc_obj = rb_str_new_cstr((char *)enc);
 
@@ -124,18 +135,16 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
   ctlen = ptlen + 16; // block size is known to be at maximum 16 characters so use that
   // TODO: use OSSL_HPKE_get_ciphertext_size
 
-  const unsigned char aad_[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
-  size_t aadlen_ = 8;
-
   ct_obj = rb_str_new(0, ctlen);
 
   GetHpkeCtx(self, sctx);
 
-  rb_p(rb_sprintf("%s", sctx->shared_secret));
-  rb_p(rb_sprintf("%ld", sctx->shared_secretlen));
+  rbdebug_print_hex(sctx->shared_secret, sctx->shared_secretlen);
+  rbdebug_print_hex(sctx->nonce, sctx->noncelen);
+  rbdebug_print_hex(sctx->key, sctx->keylen);
 
   // if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(pt), ptlen) != 1) {
-  if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen, aad_, aadlen_, (unsigned char*)RSTRING_PTR(pt), ptlen) != 1) {
+  if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(pt), ptlen) != 1) {
     ossl_raise(eHPKEError, "could not seal");
   }
 
@@ -166,8 +175,9 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
     ossl_raise(eHPKEError, "could not decap");
   }
 
-  rb_p(rb_sprintf("%s", rctx->shared_secret));
-  rb_p(rb_sprintf("%ld", rctx->shared_secretlen));
+  rbdebug_print_hex(rctx->shared_secret, rctx->shared_secretlen);
+  rbdebug_print_hex(rctx->nonce, rctx->noncelen);
+  rbdebug_print_hex(rctx->key, rctx->keylen);
 
   return Qtrue;
 }
@@ -186,10 +196,15 @@ ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
   pt_obj = rb_str_new(0, ptlen);
 
   GetHpkeCtx(self, rctx);
+  rbdebug_print_hex(rctx->shared_secret, rctx->shared_secretlen);
+  rbdebug_print_hex(rctx->nonce, rctx->noncelen);
+  rbdebug_print_hex(rctx->key, rctx->keylen);
 
   if (OSSL_HPKE_open(rctx, (unsigned char *)RSTRING_PTR(pt_obj), &ptlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(ct), ctlen) != 1) {
     ossl_raise(eHPKEError, "could not open");
   }
+
+  rb_str_resize(pt_obj, ptlen);
 
   return pt_obj;
 }
@@ -206,10 +221,10 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
   secret_obj = rb_str_new(0, NUM2INT(secretlen));
 
   GetHpkeCtx(self, ctx);
-  rb_p(rb_sprintf("%s", ctx->shared_secret));
-  rb_p(rb_sprintf("%ld", ctx->shared_secretlen));
-  rb_p(rb_sprintf("%s", ctx->exportersec));
-  rb_p(rb_sprintf("%ld", ctx->exporterseclen));
+  rbdebug_print_hex(ctx->shared_secret, ctx->shared_secretlen);
+  rbdebug_print_hex(ctx->nonce, ctx->noncelen);
+  rbdebug_print_hex(ctx->key, ctx->keylen);
+  rbdebug_print_hex(ctx->exportersec, ctx->exporterseclen);
 
   if (OSSL_HPKE_export(ctx, (unsigned char *)RSTRING_PTR(secret_obj), NUM2INT(secretlen), (unsigned char*)RSTRING_PTR(label), labellen) != 1) {
     ossl_raise(eHPKEError, "could not export");
