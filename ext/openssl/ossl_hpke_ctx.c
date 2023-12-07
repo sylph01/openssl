@@ -236,12 +236,12 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
 {
   EVP_PKEY *pkey;
   VALUE pkey_obj;
-  unsigned char pub[256];
+  unsigned char pub[133]; // as per RFC9810 section 7.1, the maximum size of Npk possible is 133
   size_t publen;
   OSSL_HPKE_SUITE hpke_suite = {
     NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
   };
-  publen = 256;
+  publen = 133; // set it to maximum length first, it will shrink down upon call of OSSL_HPKE_keygen
 
   if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, NULL, 0, NULL, NULL)){
     ossl_raise(eHPKEError, "could not keygen");
