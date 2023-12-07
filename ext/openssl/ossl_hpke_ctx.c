@@ -103,19 +103,29 @@ VALUE
 ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 {
   VALUE enc_obj;
-  unsigned char enc[1024];
+  unsigned char *enc;
   size_t enclen;
   OSSL_HPKE_CTX *sctx;
   size_t publen;
   size_t infolen;
+  OSSL_HPKE_SUITE suite = {
+    NUM2INT(rb_iv_get(self, "@kem_id")),
+    NUM2INT(rb_iv_get(self, "@kdf_id")),
+    NUM2INT(rb_iv_get(self, "@aead_id"))
+  };
 
   GetHpkeCtx(self, sctx);
 
-  enclen = sizeof(enc);
+  enclen = OSSL_HPKE_get_public_encap_size(suite);
+  if((enc = (unsigned char *)malloc(enclen * sizeof(unsigned char))) == NULL) {
+    ossl_raise(eHPKEError, "could not allocate memory for encapsulation");
+  }
+
   publen = RSTRING_LEN(pub);
   infolen = RSTRING_LEN(info);
 
   if (OSSL_HPKE_encap(sctx, enc, &enclen, (unsigned char*)RSTRING_PTR(pub), publen, (unsigned char*)RSTRING_PTR(info), infolen) != 1) {
+    free(enc);
     ossl_raise(eHPKEError, "could not encap");
   }
 
@@ -125,6 +135,7 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 
   enc_obj = rb_str_new((char *)enc, enclen);
 
+  free(enc);
   return enc_obj;
 }
 
