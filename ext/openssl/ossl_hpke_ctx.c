@@ -129,9 +129,11 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
     ossl_raise(eHPKEError, "could not encap");
   }
 
+  /*
   rbdebug_print_hex(sctx->shared_secret, sctx->shared_secretlen);
   rbdebug_print_hex(sctx->nonce, sctx->noncelen);
   rbdebug_print_hex(sctx->key, sctx->keylen);
+  */
 
   enc_obj = rb_str_new((char *)enc, enclen);
 
@@ -159,9 +161,11 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 
   GetHpkeCtx(self, sctx);
 
+  /*
   rbdebug_print_hex(sctx->shared_secret, sctx->shared_secretlen);
   rbdebug_print_hex(sctx->nonce, sctx->noncelen);
   rbdebug_print_hex(sctx->key, sctx->keylen);
+  */
 
   if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(pt), ptlen) != 1) {
     ossl_raise(eHPKEError, "could not seal");
@@ -188,9 +192,11 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
     ossl_raise(eHPKEError, "could not decap");
   }
 
+  /*
   rbdebug_print_hex(rctx->shared_secret, rctx->shared_secretlen);
   rbdebug_print_hex(rctx->nonce, rctx->noncelen);
   rbdebug_print_hex(rctx->key, rctx->keylen);
+  */
 
   return Qtrue;
 }
@@ -209,9 +215,12 @@ ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
   pt_obj = rb_str_new(0, ptlen);
 
   GetHpkeCtx(self, rctx);
+
+  /*
   rbdebug_print_hex(rctx->shared_secret, rctx->shared_secretlen);
   rbdebug_print_hex(rctx->nonce, rctx->noncelen);
   rbdebug_print_hex(rctx->key, rctx->keylen);
+  */
 
   if (OSSL_HPKE_open(rctx, (unsigned char *)RSTRING_PTR(pt_obj), &ptlen, (unsigned char*)RSTRING_PTR(aad), aadlen, (unsigned char*)RSTRING_PTR(ct), ctlen) != 1) {
     ossl_raise(eHPKEError, "could not open");
@@ -234,10 +243,12 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
   secret_obj = rb_str_new(0, NUM2INT(secretlen));
 
   GetHpkeCtx(self, ctx);
+  /*
   rbdebug_print_hex(ctx->shared_secret, ctx->shared_secretlen);
   rbdebug_print_hex(ctx->nonce, ctx->noncelen);
   rbdebug_print_hex(ctx->key, ctx->keylen);
   rbdebug_print_hex(ctx->exportersec, ctx->exporterseclen);
+  */
 
   if (OSSL_HPKE_export(ctx, (unsigned char *)RSTRING_PTR(secret_obj), NUM2INT(secretlen), (unsigned char*)RSTRING_PTR(label), labellen) != 1) {
     ossl_raise(eHPKEError, "could not export");
