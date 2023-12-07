@@ -252,26 +252,6 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
   return pkey_obj;
 }
 
-VALUE
-ossl_hpke_keygen_pub(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
-{
-  EVP_PKEY *pkey;
-  VALUE pub_obj;
-  unsigned char pub[256];
-  size_t publen;
-  OSSL_HPKE_SUITE hpke_suite = {
-    NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
-  };
-
-  if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, NULL, 0, NULL, NULL)){
-    ossl_raise(eHPKEError, "could not keygen");
-  }
-
-  pub_obj = rb_str_new((char *)pub, publen);
-
-  return pub_obj;
-}
-
 void
 Init_ossl_hpke_ctx(void)
 {
@@ -280,7 +260,6 @@ Init_ossl_hpke_ctx(void)
   eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
 
   rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
-  rb_define_module_function(mHPKE, "keygen_pub", ossl_hpke_keygen_pub, 3);
 
   rb_define_singleton_method(cContext, "new_sender", ossl_hpke_ctx_new_sender, 4);
   rb_define_singleton_method(cContext, "new_receiver", ossl_hpke_ctx_new_receiver, 4);
