@@ -70,6 +70,10 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id, 
 
   obj = ossl_hpke_ctx_new(sctx);
 
+  rb_iv_set(obj, "@kem_id", kem_id);
+  rb_iv_set(obj, "@kdf_id", kdf_id);
+  rb_iv_set(obj, "@aead_id", aead_id);
+
   return obj;
 }
 
@@ -87,6 +91,10 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id
   }
 
   obj = ossl_hpke_ctx_new(sctx);
+
+  rb_iv_set(obj, "@kem_id", kem_id);
+  rb_iv_set(obj, "@kdf_id", kdf_id);
+  rb_iv_set(obj, "@aead_id", aead_id);
 
   return obj;
 }
@@ -125,12 +133,16 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 {
   VALUE ct_obj;
   OSSL_HPKE_CTX *sctx;
+  OSSL_HPKE_SUITE suite = {
+    NUM2INT(rb_iv_get(self, "@kem_id")),
+    NUM2INT(rb_iv_get(self, "@kdf_id")),
+    NUM2INT(rb_iv_get(self, "@aead_id"))
+  };
   size_t ctlen, aadlen, ptlen;
 
   aadlen = RSTRING_LEN(aad);
   ptlen  = RSTRING_LEN(pt);
-  ctlen = ptlen + 16; // block size is known to be at maximum 16 characters so use that
-  // TODO: use OSSL_HPKE_get_ciphertext_size
+  ctlen = OSSL_HPKE_get_ciphertext_size(suite, ptlen);
 
   ct_obj = rb_str_new(0, ctlen);
 
@@ -258,6 +270,11 @@ Init_ossl_hpke_ctx(void)
   mHPKE = rb_define_module_under(mOSSL, "HPKE");
   cContext = rb_define_class_under(mHPKE, "Context", rb_cObject);
   eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
+
+  // attr_readers for suite values
+  rb_define_attr(cContext, "kem_id",  1, 0);
+  rb_define_attr(cContext, "kdf_id",  1, 0);
+  rb_define_attr(cContext, "aead_id", 1, 0);
 
   rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
 
