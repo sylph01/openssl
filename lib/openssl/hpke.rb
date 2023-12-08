@@ -19,9 +19,9 @@ module OpenSSL::HPKE
 
       @mode_id = MODES[mode]
       if role == :sender
-        Context.new_sender(@mode_id, @kem_id, @kdf_id, @aead_id)
+        Context.new_sender(@mode_id, suite.kem_id, suite.kdf_id, suite.aead_id)
       elsif role == :receiver
-        Context.new_receiver(@mode_id, @kem_id, @kdf_id, @aead_id)
+        Context.new_receiver(@mode_id, suite.kem_id, suite.kdf_id, suite.aead_id)
       else
         raise OpenSSL::HPKE::HPKEError, 'Invalid role specified'
       end
