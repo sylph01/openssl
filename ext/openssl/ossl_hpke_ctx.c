@@ -33,6 +33,7 @@ const rb_data_type_t ossl_hpke_ctx_type = {
   0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+#if OSSL_OPENSSL_PREREQ(3, 2, 0)
 static VALUE
 hpke_ctx_new0(VALUE arg)
 {
@@ -47,9 +48,6 @@ hpke_ctx_new0(VALUE arg)
 VALUE
 ossl_hpke_ctx_new(OSSL_HPKE_CTX *ctx)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
-  ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
   VALUE obj;
   int status;
 
@@ -60,8 +58,8 @@ ossl_hpke_ctx_new(OSSL_HPKE_CTX *ctx)
   }
 
   return obj;
-#endif
 }
+#endif
 
 VALUE
 ossl_hpke_ctx_new_sender(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
