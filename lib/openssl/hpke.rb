@@ -11,21 +11,7 @@ module OpenSSL::HPKE
       base: 0x00
     }.freeze
 
-    attr_reader :mode_id
-
-    def initialize(mode, role, suite)
-      raise OpenSSL::HPKE::HPKEError, 'Invalid mode specified' unless MODES[mode]
-      raise OpenSSL::HPKE::HPKEError, 'Invalid suite specified' unless suite.is_a?(OpenSSL::HPKE::Suite)
-
-      @mode_id = MODES[mode]
-      if role == :sender
-        Context.new_sender(@mode_id, suite.kem_id, suite.kdf_id, suite.aead_id)
-      elsif role == :receiver
-        Context.new_receiver(@mode_id, suite.kem_id, suite.kdf_id, suite.aead_id)
-      else
-        raise OpenSSL::HPKE::HPKEError, 'Invalid role specified'
-      end
-    end
+    attr_reader :mode_id, :kem_id, :kdf_id, :aead_id
   end
 
   class Suite

@@ -1,7 +1,12 @@
 #include "ossl.h"
 
+#define SENDER_CONTEXT 0
+#define RECEIVER_CONTEXT 1
+
 VALUE mHPKE;
 VALUE cContext;
+VALUE cSenderContext;
+VALUE cReceiverContext;
 VALUE eHPKEError;
 
 void
@@ -35,23 +40,39 @@ const rb_data_type_t ossl_hpke_ctx_type = {
 
 #if OSSL_OPENSSL_PREREQ(3, 2, 0)
 static VALUE
-hpke_ctx_new0(VALUE arg)
+hpke_ctx_new0_sender(VALUE arg)
 {
   OSSL_HPKE_CTX *ctx = (OSSL_HPKE_CTX *)arg;
   VALUE obj;
 
-  obj = rb_obj_alloc(cContext);
+  obj = rb_obj_alloc(cSenderContext);
+  RTYPEDDATA_DATA(obj) = ctx;
+  return obj;
+}
+
+static VALUE
+hpke_ctx_new0_receiver(VALUE arg)
+{
+  OSSL_HPKE_CTX *ctx = (OSSL_HPKE_CTX *)arg;
+  VALUE obj;
+
+  obj = rb_obj_alloc(cReceiverContext);
   RTYPEDDATA_DATA(obj) = ctx;
   return obj;
 }
 
 VALUE
-ossl_hpke_ctx_new(OSSL_HPKE_CTX *ctx)
+ossl_hpke_ctx_new(OSSL_HPKE_CTX *ctx, int role)
 {
   VALUE obj;
   int status;
 
-  obj = rb_protect(hpke_ctx_new0, (VALUE)ctx, &status);
+  if (role == SENDER_CONTEXT) {
+    obj = rb_protect(hpke_ctx_new0_sender, (VALUE)ctx, &status);
+  } else {
+    obj = rb_protect(hpke_ctx_new0_receiver, (VALUE)ctx, &status);
+  }
+
   if (status) {
     OSSL_HPKE_CTX_free(ctx);
     rb_jump_tag(status);
@@ -62,54 +83,64 @@ ossl_hpke_ctx_new(OSSL_HPKE_CTX *ctx)
 #endif
 
 VALUE
-ossl_hpke_ctx_new_sender(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
+ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
   ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
   OSSL_HPKE_CTX *sctx;
-  VALUE obj;
+  VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
+  kem_id = rb_iv_get(suite, "@kem_id");
+  kdf_id = rb_iv_get(suite, "@kdf_id");
+  aead_id = rb_iv_get(suite, "@aead_id");
+
+  rb_iv_set(self, "@kem_id", kem_id);
+  rb_iv_set(self, "@kdf_id", kdf_id);
+  rb_iv_set(self, "@aead_id", aead_id);
+
   OSSL_HPKE_SUITE hpke_suite = {
     NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
   };
+  mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
+  mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
 
   if((sctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_SENDER, NULL, NULL)) == NULL) {
     ossl_raise(eHPKEError, "could not create ctx");
   }
 
-  obj = ossl_hpke_ctx_new(sctx);
-
-  rb_iv_set(obj, "@kem_id", kem_id);
-  rb_iv_set(obj, "@kdf_id", kdf_id);
-  rb_iv_set(obj, "@aead_id", aead_id);
-
-  return obj;
+  RTYPEDDATA_DATA(self) = sctx;
+  return self;
 #endif
 }
 
 VALUE
-ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode_id, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
+ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
   ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
-  OSSL_HPKE_CTX *sctx;
-  VALUE obj;
+  OSSL_HPKE_CTX *rctx;
+  VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
+  kem_id = rb_iv_get(suite, "@kem_id");
+  kdf_id = rb_iv_get(suite, "@kdf_id");
+  aead_id = rb_iv_get(suite, "@aead_id");
+
+  rb_iv_set(self, "@kem_id", kem_id);
+  rb_iv_set(self, "@kdf_id", kdf_id);
+  rb_iv_set(self, "@aead_id", aead_id);
+
   OSSL_HPKE_SUITE hpke_suite = {
     NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
   };
+  mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
+  mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
 
-  if((sctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_RECEIVER, NULL, NULL)) == NULL) {
+  if((rctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_RECEIVER, NULL, NULL)) == NULL) {
     ossl_raise(eHPKEError, "could not create ctx");
   }
 
-  obj = ossl_hpke_ctx_new(sctx);
-
-  rb_iv_set(obj, "@kem_id", kem_id);
-  rb_iv_set(obj, "@kdf_id", kdf_id);
-  rb_iv_set(obj, "@aead_id", aead_id);
-
-  return obj;
+   RTYPEDDATA_DATA(self) = rctx;
+  return self;
 #endif
 }
 
@@ -327,8 +358,10 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
 void
 Init_ossl_hpke_ctx(void)
 {
-  mHPKE = rb_define_module_under(mOSSL, "HPKE");
-  cContext = rb_define_class_under(mHPKE, "Context", rb_cObject);
+  mHPKE            = rb_define_module_under(mOSSL, "HPKE");
+  cContext         = rb_define_class_under(mHPKE, "Context", rb_cObject);
+  cSenderContext   = rb_define_class_under(cContext, "Sender", cContext);
+  cReceiverContext = rb_define_class_under(cContext, "Receiver", cContext);
   eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
 
   // attr_readers for suite values
@@ -338,13 +371,13 @@ Init_ossl_hpke_ctx(void)
 
   rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
 
-  rb_define_singleton_method(cContext, "new_sender", ossl_hpke_ctx_new_sender, 4);
-  rb_define_singleton_method(cContext, "new_receiver", ossl_hpke_ctx_new_receiver, 4);
-  rb_define_method(cContext, "encap", ossl_hpke_encap, 2);
-  rb_define_method(cContext, "seal",  ossl_hpke_seal,  2);
+  rb_define_method(cSenderContext, "initialize", ossl_hpke_ctx_new_sender, 2);
+  rb_define_method(cSenderContext, "encap", ossl_hpke_encap, 2);
+  rb_define_method(cSenderContext, "seal",  ossl_hpke_seal,  2);
 
-  rb_define_method(cContext, "decap", ossl_hpke_decap, 3);
-  rb_define_method(cContext, "open",  ossl_hpke_open,  2);
+  rb_define_method(cReceiverContext, "initialize", ossl_hpke_ctx_new_receiver, 2);
+  rb_define_method(cReceiverContext, "decap", ossl_hpke_decap, 3);
+  rb_define_method(cReceiverContext, "open",  ossl_hpke_open,  2);
 
   rb_define_method(cContext, "export", ossl_hpke_export, 2);
 
