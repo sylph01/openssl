@@ -11,7 +11,7 @@ module OpenSSL::HPKE
       base: 0x00
     }.freeze
 
-    attr_reader :mode_id, :kem_id, :kdf_id, :aead_id
+    attr_reader :kem_id, :kdf_id, :aead_id
   end
 
   class Suite

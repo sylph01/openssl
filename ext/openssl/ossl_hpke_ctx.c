@@ -289,11 +289,6 @@ Init_ossl_hpke_ctx(void)
     cReceiverContext = rb_define_class_under(cContext, "Receiver", cContext);
     eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
 
-    // attr_readers for suite values
-    rb_define_attr(cContext, "kem_id",  1, 0);
-    rb_define_attr(cContext, "kdf_id",  1, 0);
-    rb_define_attr(cContext, "aead_id", 1, 0);
-
     rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
 
     rb_define_method(cSenderContext, "initialize", ossl_hpke_ctx_new_sender, 2);
