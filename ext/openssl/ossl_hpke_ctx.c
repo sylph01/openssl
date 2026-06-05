@@ -178,7 +178,7 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
     size_t infolen;
 
     GetHpkeCtx(self, rctx);
-    GetPKey(priv, pkey); // TODO: if priv was not a PKey then reject
+    GetPKey(priv, pkey);
 
     StringValue(enc);
     StringValue(info);
