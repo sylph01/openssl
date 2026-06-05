@@ -169,6 +169,8 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
     ossl_raise(eHPKEError, "could not allocate memory for encapsulation");
   }
 
+  StringValue(pub);
+  StringValue(info);
   publen = RSTRING_LEN(pub);
   infolen = RSTRING_LEN(info);
 
@@ -205,6 +207,8 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
   };
   size_t ctlen, aadlen, ptlen;
 
+  StringValue(aad);
+  StringValue(pt);
   aadlen = RSTRING_LEN(aad);
   ptlen  = RSTRING_LEN(pt);
   ctlen = OSSL_HPKE_get_ciphertext_size(suite, ptlen);
@@ -241,6 +245,8 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
   GetHpkeCtx(self, rctx);
   GetPKey(priv, pkey); // TODO: if priv was not a PKey then reject
 
+  StringValue(enc);
+  StringValue(info);
   enclen = RSTRING_LEN(enc);
   infolen = RSTRING_LEN(info);
 
@@ -268,6 +274,8 @@ ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
   OSSL_HPKE_CTX *rctx;
   size_t ptlen, aadlen, ctlen;
 
+  StringValue(aad);
+  StringValue(ct);
   aadlen = RSTRING_LEN(aad);
   ctlen  = RSTRING_LEN(ct);
   ptlen = ctlen;
@@ -302,6 +310,7 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
   OSSL_HPKE_CTX *ctx;
   size_t labellen;
 
+  StringValue(label);
   labellen = RSTRING_LEN(label);
 
   secret_obj = rb_str_new(0, NUM2INT(secretlen));
