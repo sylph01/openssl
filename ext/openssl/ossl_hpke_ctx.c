@@ -349,7 +349,7 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
     ossl_raise(eHPKEError, "could not keygen");
   }
 
-  pkey_obj = ossl_pkey_new(pkey);
+  pkey_obj = ossl_pkey_wrap(pkey);
 
   return pkey_obj;
 #endif
