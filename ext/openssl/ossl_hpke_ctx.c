@@ -23,7 +23,7 @@ const rb_data_type_t ossl_hpke_ctx_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-VALUE
+static VALUE
 ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
@@ -58,7 +58,7 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 #endif
 }
 
-VALUE
+static VALUE
 ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
@@ -93,7 +93,7 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 #endif
 }
 
-VALUE
+static VALUE
 ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
@@ -129,7 +129,7 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 #endif
 }
 
-VALUE
+static VALUE
 ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
@@ -162,7 +162,7 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 #endif
 }
 
-VALUE
+static VALUE
 ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
@@ -189,7 +189,7 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
 #endif
 }
 
-VALUE
+static VALUE
 ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
@@ -219,7 +219,7 @@ ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
 #endif
 }
 
-VALUE
+static VALUE
 ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
@@ -251,7 +251,7 @@ ossl_hpke_ctx_alloc(VALUE klass)
 }
 
 /* HPKE module method */
-VALUE
+static VALUE
 ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
 {
 #if !OSSL_OPENSSL_PREREQ(3, 2, 0)
