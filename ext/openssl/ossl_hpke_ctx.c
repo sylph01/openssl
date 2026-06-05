@@ -22,9 +22,7 @@ rbdebug_print_hex(const unsigned char *str, size_t len)
 static void
 ossl_hpke_ctx_free(void *ptr)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
-  ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
+#if OSSL_OPENSSL_PREREQ(3, 2, 0)
   OSSL_HPKE_CTX_free(ptr);
 #endif
 }
