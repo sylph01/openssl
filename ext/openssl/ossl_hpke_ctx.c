@@ -88,6 +88,10 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 #else
   OSSL_HPKE_CTX *sctx;
   VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
+
+  if (RTYPEDDATA_DATA(self))
+    ossl_raise(eHPKEError, "HPKE context is already initialized");
+
   kem_id = rb_iv_get(suite, "@kem_id");
   kdf_id = rb_iv_get(suite, "@kdf_id");
   aead_id = rb_iv_get(suite, "@aead_id");
@@ -119,6 +123,10 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 #else
   OSSL_HPKE_CTX *rctx;
   VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
+
+  if (RTYPEDDATA_DATA(self))
+    ossl_raise(eHPKEError, "HPKE context is already initialized");
+
   kem_id = rb_iv_get(suite, "@kem_id");
   kdf_id = rb_iv_get(suite, "@kdf_id");
   aead_id = rb_iv_get(suite, "@aead_id");
