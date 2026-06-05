@@ -9,7 +9,7 @@ extern const rb_data_type_t ossl_hpke_ctx_type;
 #define GetHpkeCtx(obj, ctx) do {\
     TypedData_Get_Struct((obj), OSSL_HPKE_CTX, &ossl_hpke_ctx_type, (ctx)); \
     if (!(ctx)) { \
-	rb_raise(rb_eRuntimeError, "OSSL_HPKE_CTX wasn't initialized!");\
+        rb_raise(rb_eRuntimeError, "OSSL_HPKE_CTX wasn't initialized!");\
     } \
 } while (0)
 #endif
