@@ -1,3 +1,7 @@
+/*
+ * Ruby/OpenSSL Project
+ * Copyright (C) 2026 Ruby/OpenSSL Project Authors
+ */
 #include "ossl.h"
 
 VALUE mHPKE;
