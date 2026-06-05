@@ -271,7 +271,7 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
 #else
     EVP_PKEY *pkey;
     VALUE pkey_obj;
-    unsigned char pub[133]; // as per RFC9810 section 7.1, the maximum size of Npk possible is 133
+    unsigned char pub[133]; // as per RFC9180 section 7.1, the maximum size of Npk possible is 133
     size_t publen;
     OSSL_HPKE_SUITE hpke_suite = {
         NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
