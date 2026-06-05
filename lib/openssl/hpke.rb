@@ -20,7 +20,7 @@ module OpenSSL::HPKE
     KEMS = {
       dhkem_p256_hkdf_sha256: 0x0010,
       dhkem_p384_hkdf_sha384: 0x0011,
-      dhkem_p521_hkdf_sha512: 0x0012, # yes this is not a typo of p512
+      dhkem_p521_hkdf_sha512: 0x0012,
       dhkem_x25519_hkdf_sha256: 0x0020,
       dhkem_x448_hkdf_sha512: 0x0021
     }.freeze
