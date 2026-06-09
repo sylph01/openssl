@@ -65,9 +65,7 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
     mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
     mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
 
-    const char *propq = EVP_default_properties_is_fips_enabled(NULL) ? "fips=yes" : NULL;
-
-    if((sctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_SENDER, NULL, propq)) == NULL) {
+    if((sctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_SENDER, NULL, NULL)) == NULL) {
         ossl_raise(eHPKEError, "could not create ctx");
     }
 
@@ -102,9 +100,7 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
     mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
     mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
 
-    const char *propq = EVP_default_properties_is_fips_enabled(NULL) ? "fips=yes" : NULL;
-
-    if((rctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_RECEIVER, NULL, propq)) == NULL) {
+    if((rctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite, OSSL_HPKE_ROLE_RECEIVER, NULL, NULL)) == NULL) {
         ossl_raise(eHPKEError, "could not create ctx");
     }
 
@@ -290,9 +286,7 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
     };
     publen = 133; // set it to maximum length first, it will shrink down upon call of OSSL_HPKE_keygen
 
-    const char *propq = EVP_default_properties_is_fips_enabled(NULL) ? "fips=yes" : NULL;
-
-    if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, NULL, 0, NULL, propq)){
+    if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, NULL, 0, NULL, NULL)){
         ossl_raise(eHPKEError, "could not keygen");
     }
 
