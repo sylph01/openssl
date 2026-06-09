@@ -5,15 +5,6 @@ module OpenSSL::HPKE
     keygen(suite.kem_id, suite.kdf_id, suite.aead_id)
   end
 
-  class Context
-    # supports only base mode for now
-    MODES = {
-      base: 0x00
-    }.freeze
-
-    attr_reader :kem_id, :kdf_id, :aead_id
-  end
-
   class Suite
     attr_reader :kem_id, :kdf_id, :aead_id
 

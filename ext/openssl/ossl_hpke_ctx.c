@@ -301,6 +301,16 @@ Init_ossl_hpke_ctx(void)
     cReceiverContext = rb_define_class_under(cContext, "Receiver", cContext);
     eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
 
+    /* Context::MODES */
+    VALUE modes = rb_hash_new();
+    rb_hash_aset(modes, ID2SYM(rb_intern("base")), INT2NUM(0x00));
+    rb_define_const(cContext, "MODES", rb_obj_freeze(modes));
+
+    /* attr_accessor for Context */
+    rb_attr(cContext, rb_intern("kem_id"),  1, 0, Qfalse);
+    rb_attr(cContext, rb_intern("kdf_id"),  1, 0, Qfalse);
+    rb_attr(cContext, rb_intern("aead_id"), 1, 0, Qfalse);
+
     rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
 
     rb_define_method(cSenderContext, "initialize", ossl_hpke_ctx_new_sender, 2);
