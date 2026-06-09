@@ -244,14 +244,15 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
     VALUE secret_obj;
     OSSL_HPKE_CTX *ctx;
     size_t labellen;
+    int outlen = NUM2INT(secretlen);
 
     StringValue(label);
     labellen = RSTRING_LEN(label);
 
-    secret_obj = rb_str_new(0, NUM2INT(secretlen));
+    secret_obj = rb_str_new(0, outlen);
 
     GetHpkeCtx(self, ctx);
-    if (OSSL_HPKE_export(ctx, (unsigned char *)RSTRING_PTR(secret_obj), NUM2INT(secretlen), (unsigned char*)RSTRING_PTR(label), labellen) != 1) {
+    if (OSSL_HPKE_export(ctx, (unsigned char *)RSTRING_PTR(secret_obj), outlen, (unsigned char*)RSTRING_PTR(label), labellen) != 1) {
         ossl_raise(eHPKEError, "could not export");
     }
 
