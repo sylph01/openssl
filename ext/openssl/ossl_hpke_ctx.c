@@ -3,6 +3,18 @@
  * Copyright (C) 2026 Ruby/OpenSSL Project Authors
  */
 #include "ossl.h"
+#ifdef HAVE_OPENSSL_HPKE_H
+  #include <openssl/hpke.h>
+#endif
+
+#if OSSL_OPENSSL_PREREQ(3, 2, 0)
+#define GetHpkeCtx(obj, ctx) do {\
+    TypedData_Get_Struct((obj), OSSL_HPKE_CTX, &ossl_hpke_ctx_type, (ctx)); \
+    if (!(ctx)) { \
+        rb_raise(rb_eRuntimeError, "OSSL_HPKE_CTX wasn't initialized!");\
+    } \
+} while (0)
+#endif
 
 VALUE mHPKE;
 VALUE cContext;
