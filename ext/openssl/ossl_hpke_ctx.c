@@ -137,8 +137,6 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
     enc_obj = rb_str_new(0, enclen);
 
     if (OSSL_HPKE_encap(sctx, (unsigned char *)RSTRING_PTR(enc_obj), &enclen, (unsigned char*)RSTRING_PTR(pub), publen, (unsigned char*)RSTRING_PTR(info), infolen) != 1) {
-        if (EVP_default_properties_is_fips_enabled(NULL))
-            ossl_raise(eHPKEError, "could not encap; HPKE is not supported by the FIPS provider");
         ossl_raise(eHPKEError, "could not encap");
     }
 
@@ -200,8 +198,6 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
     infolen = RSTRING_LEN(info);
 
     if (OSSL_HPKE_decap(rctx, (unsigned char *)RSTRING_PTR(enc), enclen, pkey, (unsigned char *)RSTRING_PTR(info), infolen) != 1) {
-        if (EVP_default_properties_is_fips_enabled(NULL))
-            ossl_raise(eHPKEError, "could not decap; HPKE is not supported by the FIPS provider");
         ossl_raise(eHPKEError, "could not decap");
     }
 
