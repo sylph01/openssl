@@ -7,7 +7,7 @@
   #include <openssl/hpke.h>
 #endif
 
-#if OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if HAVE_OPENSSL_HPKE_H
 #define GetHpkeCtx(obj, ctx) do {\
     TypedData_Get_Struct((obj), OSSL_HPKE_CTX, &ossl_hpke_ctx_type, (ctx)); \
     if (!(ctx)) { \
@@ -25,7 +25,7 @@ VALUE eHPKEError;
 static void
 ossl_hpke_ctx_free(void *ptr)
 {
-#if OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if HAVE_OPENSSL_HPKE_H
     OSSL_HPKE_CTX_free(ptr);
 #endif
 }
@@ -42,7 +42,7 @@ const rb_data_type_t ossl_hpke_ctx_type = {
 static VALUE
 ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     OSSL_HPKE_CTX *sctx;
@@ -77,7 +77,7 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 static VALUE
 ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     OSSL_HPKE_CTX *rctx;
@@ -112,7 +112,7 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 static VALUE
 ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     VALUE enc_obj;
@@ -148,7 +148,7 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 static VALUE
 ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     VALUE ct_obj;
@@ -181,7 +181,7 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 static VALUE
 ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     OSSL_HPKE_CTX *rctx;
@@ -208,7 +208,7 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
 static VALUE
 ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     VALUE pt_obj;
@@ -238,7 +238,7 @@ ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
 static VALUE
 ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     VALUE secret_obj;
@@ -270,7 +270,7 @@ ossl_hpke_ctx_alloc(VALUE klass)
 static VALUE
 ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
 {
-#if !OSSL_OPENSSL_PREREQ(3, 2, 0)
+#if !HAVE_OPENSSL_HPKE_H
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
 #else
     EVP_PKEY *pkey;
