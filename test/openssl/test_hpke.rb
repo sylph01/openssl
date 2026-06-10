@@ -44,7 +44,7 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   end
 
   def test_keygen_returns_pkey
-    pkey = OpenSSL::HPKE.keygen_with_suite(x25519_suite)
+    pkey = OpenSSL::HPKE.keygen(x25519_suite)
     assert_kind_of(OpenSSL::PKey::PKey, pkey)
   end
 
@@ -52,14 +52,14 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
     ["P-256", "P-384", "P-521", "X25519", "X448"].each do |kem|
       suite = OpenSSL::HPKE::Suite.new(kem, "hkdf-sha256", "aes-128-gcm")
       assert_kind_of(OpenSSL::PKey::PKey,
-                     OpenSSL::HPKE.keygen_with_suite(suite),
+                     OpenSSL::HPKE.keygen(suite),
                      "keygen failed for KEM #{kem}")
     end
   end
 
-  def test_keygen_with_suite_rejects_non_suite
+  def test_keygen_rejects_non_suite
     assert_raise(OpenSSL::HPKE::HPKEError) do
-      OpenSSL::HPKE.keygen_with_suite("not a suite")
+      OpenSSL::HPKE.keygen("not a suite")
     end
   end
 
@@ -141,7 +141,7 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
 
   def test_string_arguments_are_required
     suite = x25519_suite
-    pkey = OpenSSL::HPKE.keygen_with_suite(suite)
+    pkey = OpenSSL::HPKE.keygen(suite)
     sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
     assert_raise(TypeError) { sender.encap(12345, "info") }
     assert_raise(TypeError) { sender.encap(public_key_bytes(pkey), 12345) }
@@ -166,7 +166,7 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
 
   # Returns an established [sender, receiver] pair sharing the same context.
   def paired_contexts(suite, info: "shared info")
-    pkey = OpenSSL::HPKE.keygen_with_suite(suite)
+    pkey = OpenSSL::HPKE.keygen(suite)
     sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
     enc = sender.encap(public_key_bytes(pkey), info)
     receiver = OpenSSL::HPKE::Context::Receiver.new(:base, suite)
@@ -175,7 +175,7 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   end
 
   def assert_hpke_roundtrip(suite, info: "some info", aad: "some aad", message: "hello hpke")
-    pkey = OpenSSL::HPKE.keygen_with_suite(suite)
+    pkey = OpenSSL::HPKE.keygen(suite)
 
     sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
     enc = sender.encap(public_key_bytes(pkey), info)

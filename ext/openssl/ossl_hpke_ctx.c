@@ -293,7 +293,7 @@ ossl_hpke_ctx_alloc(VALUE klass)
 
 /* HPKE module method */
 static VALUE
-ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
+ossl_hpke_keygen(VALUE self, VALUE suite)
 {
 #if !defined(HAVE_OSSL_HPKE_CTX_NEW)
     ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
@@ -302,8 +302,14 @@ ossl_hpke_keygen(VALUE self, VALUE kem_id, VALUE kdf_id, VALUE aead_id)
     VALUE pkey_obj;
     unsigned char pub[133]; // as per RFC9180 section 7.1, the maximum size of Npk possible is 133
     size_t publen;
+
+    if (!rb_obj_is_kind_of(suite, cSuite))
+        ossl_raise(eHPKEError, "invalid suite specified");
+
     OSSL_HPKE_SUITE hpke_suite = {
-        NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
+        NUM2INT(rb_iv_get(suite, "@kem_id")),
+        NUM2INT(rb_iv_get(suite, "@kdf_id")),
+        NUM2INT(rb_iv_get(suite, "@aead_id"))
     };
     publen = 133; // set it to maximum length first, it will shrink down upon call of OSSL_HPKE_keygen
 
@@ -337,7 +343,7 @@ Init_ossl_hpke_ctx(void)
     rb_attr(cContext, rb_intern("kdf_id"),  1, 0, Qfalse);
     rb_attr(cContext, rb_intern("aead_id"), 1, 0, Qfalse);
 
-    rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
+    rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 1);
 
     /* attr_reader for Suite */
     rb_attr(cSuite, rb_intern("kem_id"),  1, 0, Qfalse);
