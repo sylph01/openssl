@@ -17,6 +17,7 @@
 #endif
 
 VALUE mHPKE;
+VALUE cSuite;
 VALUE cContext;
 VALUE cSenderContext;
 VALUE cReceiverContext;
@@ -260,6 +261,29 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
 #endif
 }
 
+/* Suite */
+static VALUE
+ossl_hpke_suite_initialize(VALUE self, VALUE kem_name, VALUE kdf_name, VALUE aead_name)
+{
+#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
+    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
+#else
+    OSSL_HPKE_SUITE suite;
+    VALUE str = rb_sprintf("%"PRIsVALUE",%"PRIsVALUE",%"PRIsVALUE,
+                           kem_name, kdf_name, aead_name);
+
+    if (OSSL_HPKE_str2suite(StringValueCStr(str), &suite) != 1) {
+        ossl_raise(eHPKEError, "unknown HPKE suite: %"PRIsVALUE, str);
+    }
+
+    rb_iv_set(self, "@kem_id",  INT2NUM(suite.kem_id));
+    rb_iv_set(self, "@kdf_id",  INT2NUM(suite.kdf_id));
+    rb_iv_set(self, "@aead_id", INT2NUM(suite.aead_id));
+
+    return self;
+#endif
+}
+
 /* private */
 static VALUE
 ossl_hpke_ctx_alloc(VALUE klass)
@@ -297,6 +321,7 @@ void
 Init_ossl_hpke_ctx(void)
 {
     mHPKE            = rb_define_module_under(mOSSL, "HPKE");
+    cSuite           = rb_define_class_under(mHPKE, "Suite", rb_cObject);
     cContext         = rb_define_class_under(mHPKE, "Context", rb_cObject);
     cSenderContext   = rb_define_class_under(cContext, "Sender", cContext);
     cReceiverContext = rb_define_class_under(cContext, "Receiver", cContext);
@@ -313,6 +338,13 @@ Init_ossl_hpke_ctx(void)
     rb_attr(cContext, rb_intern("aead_id"), 1, 0, Qfalse);
 
     rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 3);
+
+    /* attr_reader for Suite */
+    rb_attr(cSuite, rb_intern("kem_id"),  1, 0, Qfalse);
+    rb_attr(cSuite, rb_intern("kdf_id"),  1, 0, Qfalse);
+    rb_attr(cSuite, rb_intern("aead_id"), 1, 0, Qfalse);
+
+    rb_define_method(cSuite, "initialize", ossl_hpke_suite_initialize, 3);
 
     rb_define_method(cSenderContext, "initialize", ossl_hpke_ctx_new_sender, 2);
     rb_define_method(cSenderContext, "encap", ossl_hpke_encap, 2);

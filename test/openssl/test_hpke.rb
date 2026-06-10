@@ -18,24 +18,29 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   end
 
   def test_suite_new_with_names
-    suite = OpenSSL::HPKE::Suite.new_with_names(
-      :dhkem_x25519_hkdf_sha256, :hkdf_sha256, :aes_128_gcm)
+    suite = OpenSSL::HPKE::Suite.new("X25519", "hkdf-sha256", "aes-128-gcm")
     assert_equal(0x0020, suite.kem_id)
     assert_equal(0x0001, suite.kdf_id)
     assert_equal(0x0001, suite.aead_id)
   end
 
-  def test_suite_new_with_names_unknown_returns_nil
-    assert_nil(OpenSSL::HPKE::Suite.new_with_names(:bogus, :hkdf_sha256, :aes_128_gcm))
-    assert_nil(OpenSSL::HPKE::Suite.new_with_names(:dhkem_x25519_hkdf_sha256, :bogus, :aes_128_gcm))
-    assert_nil(OpenSSL::HPKE::Suite.new_with_names(:dhkem_x25519_hkdf_sha256, :hkdf_sha256, :bogus))
-  end
-
-  def test_suite_new_with_ids
-    suite = OpenSSL::HPKE::Suite.new(0x0020, 0x0001, 0x0001)
+  def test_suite_names_are_case_insensitive
+    suite = OpenSSL::HPKE::Suite.new("x25519", "HKDF-SHA256", "AES-128-GCM")
     assert_equal(0x0020, suite.kem_id)
     assert_equal(0x0001, suite.kdf_id)
     assert_equal(0x0001, suite.aead_id)
+  end
+
+  def test_suite_new_unknown_name_raises
+    assert_raise(OpenSSL::HPKE::HPKEError) do
+      OpenSSL::HPKE::Suite.new("bogus", "hkdf-sha256", "aes-128-gcm")
+    end
+    assert_raise(OpenSSL::HPKE::HPKEError) do
+      OpenSSL::HPKE::Suite.new("X25519", "bogus", "aes-128-gcm")
+    end
+    assert_raise(OpenSSL::HPKE::HPKEError) do
+      OpenSSL::HPKE::Suite.new("X25519", "hkdf-sha256", "bogus")
+    end
   end
 
   def test_keygen_returns_pkey
@@ -44,8 +49,8 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   end
 
   def test_keygen_for_all_kems
-    OpenSSL::HPKE::Suite::KEMS.each_key do |kem|
-      suite = OpenSSL::HPKE::Suite.new_with_names(kem, :hkdf_sha256, :aes_128_gcm)
+    ["P-256", "P-384", "P-521", "X25519", "X448"].each do |kem|
+      suite = OpenSSL::HPKE::Suite.new(kem, "hkdf-sha256", "aes-128-gcm")
       assert_kind_of(OpenSSL::PKey::PKey,
                      OpenSSL::HPKE.keygen_with_suite(suite),
                      "keygen failed for KEM #{kem}")
@@ -63,18 +68,15 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   end
 
   def test_base_mode_roundtrip_x448
-    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new_with_names(
-      :dhkem_x448_hkdf_sha512, :hkdf_sha512, :aes_256_gcm))
+    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new("X448", "hkdf-sha512", "aes-256-gcm"))
   end
 
   def test_base_mode_roundtrip_p256
-    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new_with_names(
-      :dhkem_p256_hkdf_sha256, :hkdf_sha256, :aes_128_gcm))
+    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new("P-256", "hkdf-sha256", "aes-128-gcm"))
   end
 
   def test_base_mode_roundtrip_chacha20poly1305
-    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new_with_names(
-      :dhkem_x25519_hkdf_sha256, :hkdf_sha256, :chacha20poly1305))
+    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new("X25519", "hkdf-sha256", "chacha20-poly1305"))
   end
 
   def test_seal_open_multiple_messages_in_order
@@ -117,8 +119,7 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   end
 
   def test_export_only_suite
-    suite = OpenSSL::HPKE::Suite.new_with_names(
-      :dhkem_x25519_hkdf_sha256, :hkdf_sha256, :export_only)
+    suite = OpenSSL::HPKE::Suite.new("X25519", "hkdf-sha256", "exporter")
     sender, receiver = paired_contexts(suite)
     assert_equal(sender.export(32, "label"), receiver.export(32, "label"))
     # The export-only AEAD cannot seal or open.
@@ -149,8 +150,7 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   private
 
   def x25519_suite
-    OpenSSL::HPKE::Suite.new_with_names(
-      :dhkem_x25519_hkdf_sha256, :hkdf_sha256, :aes_128_gcm)
+    OpenSSL::HPKE::Suite.new("X25519", "hkdf-sha256", "aes-128-gcm")
   end
 
   # The KEM public key passed to #encap is the recipient's public key in the

@@ -4,35 +4,4 @@ module OpenSSL::HPKE
 
     keygen(suite.kem_id, suite.kdf_id, suite.aead_id)
   end
-
-  class Suite
-    attr_reader :kem_id, :kdf_id, :aead_id
-
-    KEMS = {
-      dhkem_p256_hkdf_sha256: 0x0010,
-      dhkem_p384_hkdf_sha384: 0x0011,
-      dhkem_p521_hkdf_sha512: 0x0012,
-      dhkem_x25519_hkdf_sha256: 0x0020,
-      dhkem_x448_hkdf_sha512: 0x0021
-    }.freeze
-
-    KDFS = {
-      hkdf_sha256: 0x0001,
-      hkdf_sha384: 0x0002,
-      hkdf_sha512: 0x0003
-    }.freeze
-
-    AEADS = {
-      aes_128_gcm: 0x0001,
-      aes_256_gcm: 0x0002,
-      chacha20poly1305: 0x0003,
-      export_only: 0xffff
-    }.freeze
-
-    def initialize(kem_id, kdf_id, aead_id)
-      @kem_id  = kem_id
-      @kdf_id  = kdf_id
-      @aead_id = aead_id
-    end
-  end
 end
