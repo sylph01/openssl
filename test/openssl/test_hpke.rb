@@ -10,10 +10,10 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
     # used by HPKE, so no HPKE operation can complete a round-trip under FIPS.
     # The whole feature is therefore omitted in FIPS mode.
     omit_on_fips
-    # The HPKE API was added in OpenSSL 3.2.0. LibreSSL and AWS-LC do not
-    # provide it, and openssl? returns false for those.
-    unless openssl?(3, 2, 0)
-      omit "HPKE is only supported on OpenSSL >= 3.2.0"
+    # OpenSSL::HPKE is only defined when the extension was built against
+    # OpenSSL >= 3.2.0 (LibreSSL and AWS-LC do not provide the HPKE API).
+    unless defined?(OpenSSL::HPKE)
+      omit "HPKE is not supported by this OpenSSL"
     end
   end
 

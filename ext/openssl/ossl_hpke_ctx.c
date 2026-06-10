@@ -3,18 +3,17 @@
  * Copyright (C) 2026 Ruby/OpenSSL Project Authors
  */
 #include "ossl.h"
-#if defined(HAVE_OSSL_HPKE_CTX_NEW)
-  #include <openssl/hpke.h>
-#endif
 
 #if defined(HAVE_OSSL_HPKE_CTX_NEW)
+
+#include <openssl/hpke.h>
+
 #define GetHpkeCtx(obj, ctx) do {\
     TypedData_Get_Struct((obj), OSSL_HPKE_CTX, &ossl_hpke_ctx_type, (ctx)); \
     if (!(ctx)) { \
         rb_raise(rb_eRuntimeError, "OSSL_HPKE_CTX wasn't initialized!");\
     } \
 } while (0)
-#endif
 
 VALUE mHPKE;
 VALUE cSuite;
@@ -26,9 +25,7 @@ VALUE eHPKEError;
 static void
 ossl_hpke_ctx_free(void *ptr)
 {
-#if defined(HAVE_OSSL_HPKE_CTX_NEW)
     OSSL_HPKE_CTX_free(ptr);
-#endif
 }
 
 /* public */
@@ -43,9 +40,6 @@ const rb_data_type_t ossl_hpke_ctx_type = {
 static VALUE
 ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     OSSL_HPKE_CTX *sctx;
     VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
 
@@ -72,15 +66,11 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 
     RTYPEDDATA_DATA(self) = sctx;
     return self;
-#endif
 }
 
 static VALUE
 ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     OSSL_HPKE_CTX *rctx;
     VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
 
@@ -107,15 +97,11 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 
     RTYPEDDATA_DATA(self) = rctx;
     return self;
-#endif
 }
 
 static VALUE
 ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     VALUE enc_obj;
     size_t enclen;
     OSSL_HPKE_CTX *sctx;
@@ -143,15 +129,11 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 
     rb_str_resize(enc_obj, enclen);
     return enc_obj;
-#endif
 }
 
 static VALUE
 ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     VALUE ct_obj;
     OSSL_HPKE_CTX *sctx;
     OSSL_HPKE_SUITE suite = {
@@ -176,15 +158,11 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
     }
 
     return ct_obj;
-#endif
 }
 
 static VALUE
 ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     OSSL_HPKE_CTX *rctx;
     EVP_PKEY *pkey;
     size_t enclen;
@@ -203,15 +181,11 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
     }
 
     return Qtrue;
-#endif
 }
 
 static VALUE
 ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     VALUE pt_obj;
     OSSL_HPKE_CTX *rctx;
     size_t ptlen, aadlen, ctlen;
@@ -233,15 +207,11 @@ ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
     rb_str_resize(pt_obj, ptlen);
 
     return pt_obj;
-#endif
 }
 
 static VALUE
 ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     VALUE secret_obj;
     OSSL_HPKE_CTX *ctx;
     size_t labellen;
@@ -258,16 +228,12 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
     }
 
     return secret_obj;
-#endif
 }
 
 /* Suite */
 static VALUE
 ossl_hpke_suite_initialize(VALUE self, VALUE kem_name, VALUE kdf_name, VALUE aead_name)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     OSSL_HPKE_SUITE suite;
     VALUE str = rb_sprintf("%"PRIsVALUE",%"PRIsVALUE",%"PRIsVALUE,
                            kem_name, kdf_name, aead_name);
@@ -281,7 +247,6 @@ ossl_hpke_suite_initialize(VALUE self, VALUE kem_name, VALUE kdf_name, VALUE aea
     rb_iv_set(self, "@aead_id", INT2NUM(suite.aead_id));
 
     return self;
-#endif
 }
 
 /* private */
@@ -295,9 +260,6 @@ ossl_hpke_ctx_alloc(VALUE klass)
 static VALUE
 ossl_hpke_keygen(VALUE self, VALUE suite)
 {
-#if !defined(HAVE_OSSL_HPKE_CTX_NEW)
-    ossl_raise(eHPKEError, "OpenSSL 3.2.0 required");
-#else
     EVP_PKEY *pkey;
     VALUE pkey_obj;
     unsigned char pub[133]; // as per RFC9180 section 7.1, the maximum size of Npk possible is 133
@@ -320,7 +282,6 @@ ossl_hpke_keygen(VALUE self, VALUE suite)
     pkey_obj = ossl_pkey_wrap(pkey);
 
     return pkey_obj;
-#endif
 }
 
 void
@@ -364,3 +325,12 @@ Init_ossl_hpke_ctx(void)
 
     rb_define_alloc_func(cContext, ossl_hpke_ctx_alloc);
 }
+
+#else /* !defined(HAVE_OSSL_HPKE_CTX_NEW) */
+
+void
+Init_ossl_hpke_ctx(void)
+{
+}
+
+#endif
