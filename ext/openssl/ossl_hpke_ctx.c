@@ -15,12 +15,12 @@
     } \
 } while (0)
 
-VALUE mHPKE;
-VALUE cSuite;
-VALUE cContext;
-VALUE cSenderContext;
-VALUE cReceiverContext;
-VALUE eHPKEError;
+static VALUE mHPKE;
+static VALUE cSuite;
+static VALUE cContext;
+static VALUE cSenderContext;
+static VALUE cReceiverContext;
+static VALUE eHPKEError;
 
 static void
 ossl_hpke_ctx_free(void *ptr)
@@ -28,8 +28,7 @@ ossl_hpke_ctx_free(void *ptr)
     OSSL_HPKE_CTX_free(ptr);
 }
 
-/* public */
-const rb_data_type_t ossl_hpke_ctx_type = {
+static const rb_data_type_t ossl_hpke_ctx_type = {
     "OpenSSL/HPKE_CTX",
     {
         0, ossl_hpke_ctx_free,
