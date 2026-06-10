@@ -68,15 +68,18 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   end
 
   def test_base_mode_roundtrip_x448
-    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new("X448", "hkdf-sha512", "aes-256-gcm"))
+    assert_hpke_roundtrip(
+      OpenSSL::HPKE::Suite.new("X448", "hkdf-sha512", "aes-256-gcm"))
   end
 
   def test_base_mode_roundtrip_p256
-    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new("P-256", "hkdf-sha256", "aes-128-gcm"))
+    assert_hpke_roundtrip(
+      OpenSSL::HPKE::Suite.new("P-256", "hkdf-sha256", "aes-128-gcm"))
   end
 
   def test_base_mode_roundtrip_chacha20poly1305
-    assert_hpke_roundtrip(OpenSSL::HPKE::Suite.new("X25519", "hkdf-sha256", "chacha20-poly1305"))
+    assert_hpke_roundtrip(
+      OpenSSL::HPKE::Suite.new("X25519", "hkdf-sha256", "chacha20-poly1305"))
   end
 
   def test_seal_open_multiple_messages_in_order
@@ -174,7 +177,8 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
     [sender, receiver]
   end
 
-  def assert_hpke_roundtrip(suite, info: "some info", aad: "some aad", message: "hello hpke")
+  def assert_hpke_roundtrip(suite, info: "some info", aad: "some aad",
+                            message: "hello hpke")
     pkey = OpenSSL::HPKE.keygen(suite)
 
     sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
