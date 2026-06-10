@@ -34,9 +34,5 @@ module OpenSSL::HPKE
       @kdf_id  = kdf_id
       @aead_id = aead_id
     end
-
-    def self.new_with_names(kem_name, kdf_name, aead_name)
-      new(KEMS[kem_name], KDFS[kdf_name], AEADS[aead_name]) if KEMS[kem_name] && KDFS[kdf_name] && AEADS[aead_name]
-    end
   end
 end
