@@ -12,7 +12,7 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
     omit_on_fips
     # OpenSSL::HPKE is only defined when the extension was built against
     # OpenSSL >= 3.2.0 (LibreSSL and AWS-LC do not provide the HPKE API).
-    unless defined?(OpenSSL::HPKE)
+    unless openssl?(3, 2, 0)
       omit "HPKE is not supported by this OpenSSL"
     end
   end
