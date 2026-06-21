@@ -263,23 +263,56 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
 }
 
 /* Suite */
-static VALUE
-ossl_hpke_suite_initialize(VALUE self, VALUE kem_name, VALUE kdf_name,
-                           VALUE aead_name)
+static uint16_t
+ossl_hpke_suite_id(VALUE num, const char *label)
 {
-    OSSL_HPKE_SUITE *suite;
-    VALUE str = rb_sprintf("%"PRIsVALUE",%"PRIsVALUE",%"PRIsVALUE,
-                           kem_name, kdf_name, aead_name);
+    long id = NUM2LONG(num);
+
+    if (id < 0 || id > 0xFFFF)
+        ossl_raise(eHPKEError, "%s id out of range (0..0xFFFF): %ld", label, id);
+
+    return (uint16_t)id;
+}
+
+/*
+ * call-seq:
+ *    OpenSSL::HPKE::Suite.new(kem, kdf, aead) -> suite
+ *
+ * +kem+, +kdf+, and +aead+ are either all algorithm name strings (resolved via
+ * OSSL_HPKE_str2suite) or all Integer IANA algorithm IDs (as carried on the
+ * wire by e.g. ECH). The suite is validated against the algorithms the linked
+ * OpenSSL supports before it can be used.
+ */
+static VALUE
+ossl_hpke_suite_initialize(VALUE self, VALUE kem, VALUE kdf, VALUE aead)
+{
+    OSSL_HPKE_SUITE *suite, tmp;
 
     if (RTYPEDDATA_DATA(self))
         ossl_raise(eHPKEError, "HPKE suite is already initialized");
 
-    suite = ALLOC(OSSL_HPKE_SUITE);
-    if (OSSL_HPKE_str2suite(StringValueCStr(str), suite) != 1) {
-        ruby_xfree(suite);
-        ossl_raise(eHPKEError, "unknown HPKE suite: %"PRIsVALUE, str);
+    if (RB_INTEGER_TYPE_P(kem) && RB_INTEGER_TYPE_P(kdf) &&
+        RB_INTEGER_TYPE_P(aead)) {
+        tmp.kem_id  = ossl_hpke_suite_id(kem,  "KEM");
+        tmp.kdf_id  = ossl_hpke_suite_id(kdf,  "KDF");
+        tmp.aead_id = ossl_hpke_suite_id(aead, "AEAD");
+
+        if (OSSL_HPKE_suite_check(tmp) != 1) {
+            ossl_raise(eHPKEError, "unsupported HPKE suite: "
+                       "kem=0x%04x kdf=0x%04x aead=0x%04x",
+                       tmp.kem_id, tmp.kdf_id, tmp.aead_id);
+        }
+    }
+    else {
+        VALUE str = rb_sprintf("%"PRIsVALUE",%"PRIsVALUE",%"PRIsVALUE,
+                               kem, kdf, aead);
+
+        if (OSSL_HPKE_str2suite(StringValueCStr(str), &tmp) != 1)
+            ossl_raise(eHPKEError, "unknown HPKE suite: %"PRIsVALUE, str);
     }
 
+    suite = ALLOC(OSSL_HPKE_SUITE);
+    *suite = tmp;
     RTYPEDDATA_DATA(self) = suite;
     return self;
 }

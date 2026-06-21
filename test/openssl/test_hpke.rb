@@ -31,6 +31,28 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
     assert_equal(0x0001, suite.aead_id)
   end
 
+  def test_suite_new_with_integer_ids
+    # IANA IDs as carried on the wire (e.g. by ECH): X25519 / HKDF-SHA256 /
+    # AES-128-GCM. All three args must be Integers to take this path.
+    suite = OpenSSL::HPKE::Suite.new(0x0020, 0x0001, 0x0001)
+    assert_equal(0x0020, suite.kem_id)
+    assert_equal(0x0001, suite.kdf_id)
+    assert_equal(0x0001, suite.aead_id)
+  end
+
+  def test_suite_new_with_integer_ids_validates_suite
+    # Well-formed uint16 IDs that are not a supported HPKE algorithm.
+    assert_raise(OpenSSL::HPKE::HPKEError) do
+      OpenSSL::HPKE::Suite.new(0xBEEF, 0x0001, 0x0001)
+    end
+  end
+
+  def test_suite_new_with_integer_ids_out_of_range
+    assert_raise(OpenSSL::HPKE::HPKEError) do
+      OpenSSL::HPKE::Suite.new(0x10000, 0x0001, 0x0001)
+    end
+  end
+
   def test_suite_new_unknown_name_raises
     assert_raise(OpenSSL::HPKE::HPKEError) do
       OpenSSL::HPKE::Suite.new("bogus", "hkdf-sha256", "aes-128-gcm")
