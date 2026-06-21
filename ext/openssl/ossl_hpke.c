@@ -299,7 +299,7 @@ ossl_hpke_keygen(VALUE self, VALUE suite)
 }
 
 void
-Init_ossl_hpke_ctx(void)
+Init_ossl_hpke(void)
 {
     mHPKE            = rb_define_module_under(mOSSL, "HPKE");
     cSuite           = rb_define_class_under(mHPKE, "Suite", rb_cObject);
@@ -344,7 +344,7 @@ Init_ossl_hpke_ctx(void)
 #else /* !defined(HAVE_OSSL_HPKE_CTX_NEW) */
 
 void
-Init_ossl_hpke_ctx(void)
+Init_ossl_hpke(void)
 {
 }
 
