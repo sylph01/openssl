@@ -8,9 +8,14 @@
 
 #include <openssl/hpke.h>
 
-#define GetHpkeCtx(obj, ctx) do {\
-    TypedData_Get_Struct((obj), OSSL_HPKE_CTX, &ossl_hpke_ctx_type, (ctx)); \
-    if (!(ctx)) { \
+typedef struct ossl_hpke_ctx_st {
+    OSSL_HPKE_CTX  *ctx;
+    OSSL_HPKE_SUITE suite;
+} ossl_hpke_ctx_t;
+
+#define GetHpke(obj, data) do {\
+    TypedData_Get_Struct((obj), ossl_hpke_ctx_t, &ossl_hpke_ctx_type, (data)); \
+    if (!(data)) { \
         rb_raise(rb_eRuntimeError, "OSSL_HPKE_CTX wasn't initialized!");\
     } \
 } while (0)
@@ -25,13 +30,49 @@ static VALUE eHPKEError;
 static void
 ossl_hpke_ctx_free(void *ptr)
 {
-    OSSL_HPKE_CTX_free(ptr);
+    ossl_hpke_ctx_t *data = ptr;
+
+    OSSL_HPKE_CTX_free(data->ctx);
+    ruby_xfree(data);
+}
+
+static size_t
+ossl_hpke_ctx_memsize(const void *ptr)
+{
+    return sizeof(ossl_hpke_ctx_t);
 }
 
 static const rb_data_type_t ossl_hpke_ctx_type = {
     "OpenSSL/HPKE_CTX",
     {
-        0, ossl_hpke_ctx_free,
+        0, ossl_hpke_ctx_free, ossl_hpke_ctx_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+
+#define GetHpkeSuite(obj, suite) do {\
+    TypedData_Get_Struct((obj), OSSL_HPKE_SUITE, &ossl_hpke_suite_type, (suite)); \
+    if (!(suite)) { \
+        rb_raise(rb_eRuntimeError, "OSSL_HPKE_SUITE wasn't initialized!");\
+    } \
+} while (0)
+
+static void
+ossl_hpke_suite_free(void *ptr)
+{
+    ruby_xfree(ptr);
+}
+
+static size_t
+ossl_hpke_suite_memsize(const void *ptr)
+{
+    return sizeof(OSSL_HPKE_SUITE);
+}
+
+static const rb_data_type_t ossl_hpke_suite_type = {
+    "OpenSSL/HPKE_SUITE",
+    {
+        0, ossl_hpke_suite_free, ossl_hpke_suite_memsize,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
@@ -39,65 +80,62 @@ static const rb_data_type_t ossl_hpke_ctx_type = {
 static VALUE
 ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 {
-    OSSL_HPKE_CTX *sctx;
-    VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
+    ossl_hpke_ctx_t *data;
+    OSSL_HPKE_SUITE *suite_st;
+    VALUE mode_table, mode_id;
 
     if (RTYPEDDATA_DATA(self))
         ossl_raise(eHPKEError, "HPKE context is already initialized");
+    if (!rb_obj_is_kind_of(suite, cSuite))
+        ossl_raise(eHPKEError, "invalid suite specified");
+    GetHpkeSuite(suite, suite_st);
 
-    kem_id = rb_iv_get(suite, "@kem_id");
-    kdf_id = rb_iv_get(suite, "@kdf_id");
-    aead_id = rb_iv_get(suite, "@aead_id");
-
-    rb_iv_set(self, "@kem_id", kem_id);
-    rb_iv_set(self, "@kdf_id", kdf_id);
-    rb_iv_set(self, "@aead_id", aead_id);
-
-    OSSL_HPKE_SUITE hpke_suite = {
-        NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
-    };
     mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
     mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
 
-    if((sctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite,
-                                 OSSL_HPKE_ROLE_SENDER, NULL, NULL)) == NULL) {
+    data = ALLOC(ossl_hpke_ctx_t);
+    data->ctx = NULL;
+    data->suite = *suite_st;
+
+    data->ctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), data->suite,
+                                  OSSL_HPKE_ROLE_SENDER, NULL, NULL);
+    if (data->ctx == NULL) {
+        ruby_xfree(data);
         ossl_raise(eHPKEError, "could not create ctx");
     }
 
-    RTYPEDDATA_DATA(self) = sctx;
+    RTYPEDDATA_DATA(self) = data;
     return self;
 }
 
 static VALUE
 ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
 {
-    OSSL_HPKE_CTX *rctx;
-    VALUE kem_id, kdf_id, aead_id, mode_table, mode_id;
+    ossl_hpke_ctx_t *data;
+    OSSL_HPKE_SUITE *suite_st;
+    VALUE mode_table, mode_id;
 
     if (RTYPEDDATA_DATA(self))
         ossl_raise(eHPKEError, "HPKE context is already initialized");
+    if (!rb_obj_is_kind_of(suite, cSuite))
+        ossl_raise(eHPKEError, "invalid suite specified");
+    GetHpkeSuite(suite, suite_st);
 
-    kem_id = rb_iv_get(suite, "@kem_id");
-    kdf_id = rb_iv_get(suite, "@kdf_id");
-    aead_id = rb_iv_get(suite, "@aead_id");
-
-    rb_iv_set(self, "@kem_id", kem_id);
-    rb_iv_set(self, "@kdf_id", kdf_id);
-    rb_iv_set(self, "@aead_id", aead_id);
-
-    OSSL_HPKE_SUITE hpke_suite = {
-        NUM2INT(kem_id), NUM2INT(kdf_id), NUM2INT(aead_id)
-    };
     mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
     mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
 
-    if((rctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), hpke_suite,
-                                 OSSL_HPKE_ROLE_RECEIVER,
-                                 NULL, NULL)) == NULL) {
+    data = ALLOC(ossl_hpke_ctx_t);
+    data->ctx = NULL;
+    data->suite = *suite_st;
+
+    data->ctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), data->suite,
+                                  OSSL_HPKE_ROLE_RECEIVER, NULL, NULL);
+    if (data->ctx == NULL) {
+        ruby_xfree(data);
         ossl_raise(eHPKEError, "could not create ctx");
     }
 
-    RTYPEDDATA_DATA(self) = rctx;
+    RTYPEDDATA_DATA(self) = data;
     return self;
 }
 
@@ -106,26 +144,21 @@ ossl_hpke_encap(VALUE self, VALUE pub, VALUE info)
 {
     VALUE enc_obj;
     size_t enclen;
-    OSSL_HPKE_CTX *sctx;
+    ossl_hpke_ctx_t *data;
     size_t publen;
     size_t infolen;
-    OSSL_HPKE_SUITE suite = {
-        NUM2INT(rb_iv_get(self, "@kem_id")),
-        NUM2INT(rb_iv_get(self, "@kdf_id")),
-        NUM2INT(rb_iv_get(self, "@aead_id"))
-    };
 
-    GetHpkeCtx(self, sctx);
+    GetHpke(self, data);
 
     StringValue(pub);
     StringValue(info);
     publen = RSTRING_LEN(pub);
     infolen = RSTRING_LEN(info);
 
-    enclen = OSSL_HPKE_get_public_encap_size(suite);
+    enclen = OSSL_HPKE_get_public_encap_size(data->suite);
     enc_obj = rb_str_new(0, enclen);
 
-    if (OSSL_HPKE_encap(sctx, (unsigned char *)RSTRING_PTR(enc_obj), &enclen,
+    if (OSSL_HPKE_encap(data->ctx, (unsigned char *)RSTRING_PTR(enc_obj), &enclen,
                         (unsigned char *)RSTRING_PTR(pub), publen,
                         (unsigned char *)RSTRING_PTR(info), infolen) != 1) {
         ossl_raise(eHPKEError, "could not encap");
@@ -139,25 +172,20 @@ static VALUE
 ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 {
     VALUE ct_obj;
-    OSSL_HPKE_CTX *sctx;
-    OSSL_HPKE_SUITE suite = {
-        NUM2INT(rb_iv_get(self, "@kem_id")),
-        NUM2INT(rb_iv_get(self, "@kdf_id")),
-        NUM2INT(rb_iv_get(self, "@aead_id"))
-    };
+    ossl_hpke_ctx_t *data;
     size_t ctlen, aadlen, ptlen;
+
+    GetHpke(self, data);
 
     StringValue(aad);
     StringValue(pt);
     aadlen = RSTRING_LEN(aad);
     ptlen  = RSTRING_LEN(pt);
-    ctlen = OSSL_HPKE_get_ciphertext_size(suite, ptlen);
+    ctlen = OSSL_HPKE_get_ciphertext_size(data->suite, ptlen);
 
     ct_obj = rb_str_new(0, ctlen);
 
-    GetHpkeCtx(self, sctx);
-
-    if (OSSL_HPKE_seal(sctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen,
+    if (OSSL_HPKE_seal(data->ctx, (unsigned char *)RSTRING_PTR(ct_obj), &ctlen,
                        (unsigned char *)RSTRING_PTR(aad), aadlen,
                        (unsigned char *)RSTRING_PTR(pt), ptlen) != 1) {
         ossl_raise(eHPKEError, "could not seal");
@@ -169,12 +197,12 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
 static VALUE
 ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
 {
-    OSSL_HPKE_CTX *rctx;
+    ossl_hpke_ctx_t *data;
     EVP_PKEY *pkey;
     size_t enclen;
     size_t infolen;
 
-    GetHpkeCtx(self, rctx);
+    GetHpke(self, data);
     GetPKey(priv, pkey);
 
     StringValue(enc);
@@ -182,7 +210,7 @@ ossl_hpke_decap(VALUE self, VALUE enc, VALUE priv, VALUE info)
     enclen = RSTRING_LEN(enc);
     infolen = RSTRING_LEN(info);
 
-    if (OSSL_HPKE_decap(rctx, (unsigned char *)RSTRING_PTR(enc), enclen, pkey,
+    if (OSSL_HPKE_decap(data->ctx, (unsigned char *)RSTRING_PTR(enc), enclen, pkey,
                         (unsigned char *)RSTRING_PTR(info), infolen) != 1) {
         ossl_raise(eHPKEError, "could not decap");
     }
@@ -194,7 +222,7 @@ static VALUE
 ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
 {
     VALUE pt_obj;
-    OSSL_HPKE_CTX *rctx;
+    ossl_hpke_ctx_t *data;
     size_t ptlen, aadlen, ctlen;
 
     StringValue(aad);
@@ -205,9 +233,9 @@ ossl_hpke_open(VALUE self, VALUE aad, VALUE ct)
 
     pt_obj = rb_str_new(0, ptlen);
 
-    GetHpkeCtx(self, rctx);
+    GetHpke(self, data);
 
-    if (OSSL_HPKE_open(rctx, (unsigned char *)RSTRING_PTR(pt_obj), &ptlen,
+    if (OSSL_HPKE_open(data->ctx, (unsigned char *)RSTRING_PTR(pt_obj), &ptlen,
                        (unsigned char *)RSTRING_PTR(aad), aadlen,
                        (unsigned char *)RSTRING_PTR(ct), ctlen) != 1) {
         ossl_raise(eHPKEError, "could not open");
@@ -222,7 +250,7 @@ static VALUE
 ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
 {
     VALUE secret_obj;
-    OSSL_HPKE_CTX *ctx;
+    ossl_hpke_ctx_t *data;
     size_t labellen;
     int outlen = NUM2INT(secretlen);
 
@@ -231,8 +259,8 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
 
     secret_obj = rb_str_new(0, outlen);
 
-    GetHpkeCtx(self, ctx);
-    if (OSSL_HPKE_export(ctx, (unsigned char *)RSTRING_PTR(secret_obj),
+    GetHpke(self, data);
+    if (OSSL_HPKE_export(data->ctx, (unsigned char *)RSTRING_PTR(secret_obj),
                          outlen, (unsigned char *)RSTRING_PTR(label),
                          labellen) != 1) {
         ossl_raise(eHPKEError, "could not export");
@@ -241,24 +269,74 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
     return secret_obj;
 }
 
+static VALUE
+ossl_hpke_ctx_kem_id(VALUE self)
+{
+    ossl_hpke_ctx_t *data;
+    GetHpke(self, data);
+    return INT2NUM(data->suite.kem_id);
+}
+
+static VALUE
+ossl_hpke_ctx_kdf_id(VALUE self)
+{
+    ossl_hpke_ctx_t *data;
+    GetHpke(self, data);
+    return INT2NUM(data->suite.kdf_id);
+}
+
+static VALUE
+ossl_hpke_ctx_aead_id(VALUE self)
+{
+    ossl_hpke_ctx_t *data;
+    GetHpke(self, data);
+    return INT2NUM(data->suite.aead_id);
+}
+
 /* Suite */
 static VALUE
 ossl_hpke_suite_initialize(VALUE self, VALUE kem_name, VALUE kdf_name,
                            VALUE aead_name)
 {
-    OSSL_HPKE_SUITE suite;
+    OSSL_HPKE_SUITE *suite;
     VALUE str = rb_sprintf("%"PRIsVALUE",%"PRIsVALUE",%"PRIsVALUE,
                            kem_name, kdf_name, aead_name);
 
-    if (OSSL_HPKE_str2suite(StringValueCStr(str), &suite) != 1) {
+    if (RTYPEDDATA_DATA(self))
+        ossl_raise(eHPKEError, "HPKE suite is already initialized");
+
+    suite = ALLOC(OSSL_HPKE_SUITE);
+    if (OSSL_HPKE_str2suite(StringValueCStr(str), suite) != 1) {
+        ruby_xfree(suite);
         ossl_raise(eHPKEError, "unknown HPKE suite: %"PRIsVALUE, str);
     }
 
-    rb_iv_set(self, "@kem_id",  INT2NUM(suite.kem_id));
-    rb_iv_set(self, "@kdf_id",  INT2NUM(suite.kdf_id));
-    rb_iv_set(self, "@aead_id", INT2NUM(suite.aead_id));
-
+    RTYPEDDATA_DATA(self) = suite;
     return self;
+}
+
+static VALUE
+ossl_hpke_suite_kem_id(VALUE self)
+{
+    OSSL_HPKE_SUITE *suite;
+    GetHpkeSuite(self, suite);
+    return INT2NUM(suite->kem_id);
+}
+
+static VALUE
+ossl_hpke_suite_kdf_id(VALUE self)
+{
+    OSSL_HPKE_SUITE *suite;
+    GetHpkeSuite(self, suite);
+    return INT2NUM(suite->kdf_id);
+}
+
+static VALUE
+ossl_hpke_suite_aead_id(VALUE self)
+{
+    OSSL_HPKE_SUITE *suite;
+    GetHpkeSuite(self, suite);
+    return INT2NUM(suite->aead_id);
 }
 
 /* private */
@@ -268,28 +346,31 @@ ossl_hpke_ctx_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &ossl_hpke_ctx_type, NULL);
 }
 
+static VALUE
+ossl_hpke_suite_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_hpke_suite_type, NULL);
+}
+
 /* HPKE module method */
 static VALUE
 ossl_hpke_keygen(VALUE self, VALUE suite)
 {
     EVP_PKEY *pkey;
     VALUE pkey_obj;
+    OSSL_HPKE_SUITE *suite_st;
     /* as per RFC9180 section 7.1, the maximum size of Npk possible is 133 */
     unsigned char pub[133];
     size_t publen;
 
     if (!rb_obj_is_kind_of(suite, cSuite))
         ossl_raise(eHPKEError, "invalid suite specified");
+    GetHpkeSuite(suite, suite_st);
 
-    OSSL_HPKE_SUITE hpke_suite = {
-        NUM2INT(rb_iv_get(suite, "@kem_id")),
-        NUM2INT(rb_iv_get(suite, "@kdf_id")),
-        NUM2INT(rb_iv_get(suite, "@aead_id"))
-    };
     /* set to the maximum length first; OSSL_HPKE_keygen() shrinks it down */
     publen = 133;
 
-    if(!OSSL_HPKE_keygen(hpke_suite, pub, &publen, &pkey, NULL, 0, NULL, NULL)){
+    if(!OSSL_HPKE_keygen(*suite_st, pub, &publen, &pkey, NULL, 0, NULL, NULL)){
         ossl_raise(eHPKEError, "could not keygen");
     }
 
@@ -313,19 +394,19 @@ Init_ossl_hpke(void)
     rb_hash_aset(modes, ID2SYM(rb_intern("base")), INT2NUM(0x00));
     rb_define_const(cContext, "MODES", rb_obj_freeze(modes));
 
-    /* attr_accessor for Context */
-    rb_attr(cContext, rb_intern("kem_id"),  1, 0, Qfalse);
-    rb_attr(cContext, rb_intern("kdf_id"),  1, 0, Qfalse);
-    rb_attr(cContext, rb_intern("aead_id"), 1, 0, Qfalse);
+    /* suite accessors for Context (read from the cached OSSL_HPKE_SUITE) */
+    rb_define_method(cContext, "kem_id",  ossl_hpke_ctx_kem_id,  0);
+    rb_define_method(cContext, "kdf_id",  ossl_hpke_ctx_kdf_id,  0);
+    rb_define_method(cContext, "aead_id", ossl_hpke_ctx_aead_id, 0);
 
     rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 1);
 
-    /* attr_reader for Suite */
-    rb_attr(cSuite, rb_intern("kem_id"),  1, 0, Qfalse);
-    rb_attr(cSuite, rb_intern("kdf_id"),  1, 0, Qfalse);
-    rb_attr(cSuite, rb_intern("aead_id"), 1, 0, Qfalse);
-
+    /* suite accessors for Suite (read from the wrapped OSSL_HPKE_SUITE) */
+    rb_define_alloc_func(cSuite, ossl_hpke_suite_alloc);
     rb_define_method(cSuite, "initialize", ossl_hpke_suite_initialize, 3);
+    rb_define_method(cSuite, "kem_id",  ossl_hpke_suite_kem_id,  0);
+    rb_define_method(cSuite, "kdf_id",  ossl_hpke_suite_kdf_id,  0);
+    rb_define_method(cSuite, "aead_id", ossl_hpke_suite_aead_id, 0);
 
     rb_define_method(cSenderContext, "initialize", ossl_hpke_ctx_new_sender, 2);
     rb_define_method(cSenderContext, "encap", ossl_hpke_encap, 2);
