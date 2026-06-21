@@ -308,7 +308,7 @@ ossl_hpke_suite_initialize(VALUE self, VALUE kem, VALUE kdf, VALUE aead)
                                kem, kdf, aead);
 
         if (OSSL_HPKE_str2suite(StringValueCStr(str), &tmp) != 1)
-            ossl_raise(eHPKEError, "unknown HPKE suite: %"PRIsVALUE, str);
+            ossl_raise(eHPKEError, "unsupported HPKE suite: %"PRIsVALUE, str);
     }
 
     suite = ALLOC(OSSL_HPKE_SUITE);
