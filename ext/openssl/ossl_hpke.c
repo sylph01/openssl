@@ -269,30 +269,6 @@ ossl_hpke_export(VALUE self, VALUE secretlen, VALUE label)
     return secret_obj;
 }
 
-static VALUE
-ossl_hpke_ctx_kem_id(VALUE self)
-{
-    ossl_hpke_ctx_t *data;
-    GetHpke(self, data);
-    return INT2NUM(data->suite.kem_id);
-}
-
-static VALUE
-ossl_hpke_ctx_kdf_id(VALUE self)
-{
-    ossl_hpke_ctx_t *data;
-    GetHpke(self, data);
-    return INT2NUM(data->suite.kdf_id);
-}
-
-static VALUE
-ossl_hpke_ctx_aead_id(VALUE self)
-{
-    ossl_hpke_ctx_t *data;
-    GetHpke(self, data);
-    return INT2NUM(data->suite.aead_id);
-}
-
 /* Suite */
 static VALUE
 ossl_hpke_suite_initialize(VALUE self, VALUE kem_name, VALUE kdf_name,
@@ -393,11 +369,6 @@ Init_ossl_hpke(void)
     VALUE modes = rb_hash_new();
     rb_hash_aset(modes, ID2SYM(rb_intern("base")), INT2NUM(0x00));
     rb_define_const(cContext, "MODES", rb_obj_freeze(modes));
-
-    /* suite accessors for Context (read from the cached OSSL_HPKE_SUITE) */
-    rb_define_method(cContext, "kem_id",  ossl_hpke_ctx_kem_id,  0);
-    rb_define_method(cContext, "kdf_id",  ossl_hpke_ctx_kdf_id,  0);
-    rb_define_method(cContext, "aead_id", ossl_hpke_ctx_aead_id, 0);
 
     rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 1);
 
