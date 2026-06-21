@@ -45,8 +45,8 @@ static VALUE mHPKE;
 static VALUE cSuite;
 /* Document-class: OpenSSL::HPKE::Context
  * Abstract class for HPKE contexts to be used in subsequent HPKE operations.
- * Depending on the actor in the protocol, either +Sender+ or
- * +Receiver+ will be used.
+ * Depending on the actor in the protocol, either Sender or
+ * Receiver will be used.
  */
 static VALUE cContext;
 /* Document-class: OpenSSL::HPKE::Context::Sender
@@ -112,7 +112,7 @@ static const rb_data_type_t ossl_hpke_suite_type = {
  * call-seq:
  *    new(suite) -> sender_context
  *
- * Takes a +OpenSSL::HPKE::Suite+ to generate a +Context+ for the sender.
+ * Takes a OpenSSL::HPKE::Suite to generate a Context for the sender.
  * Currently assumes Base mode as the HPKE mode.
  */
 static VALUE
@@ -146,7 +146,7 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE suite)
  * call-seq:
  *    new(suite) -> receiver_context
  *
- * Takes a +OpenSSL::HPKE::Suite+ to generate a +Context+ for the receiver.
+ * Takes a OpenSSL::HPKE::Suite to generate a Context for the receiver.
  * Currently assumes Base mode as the HPKE mode.
  */
 static VALUE
@@ -180,10 +180,10 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE suite)
  * call-seq:
  *    encap(pub, info) -> encapsulated_key
  *
- * Takes a public key (+OpenSSL::PKey+) of the receiver and +info+ string
+ * Takes a public key (OpenSSL::PKey) of the receiver and +info+ string
  * (application context information; value that separates the domain in which
  * the key is used), and encapsulates a key to be used in subsequent operations.
- * Returns the encapsulated key as a +String+, which is to be passed to the
+ * Returns the encapsulated key as a String, which is to be passed to the
  * receiver of the following messages.
  */
 static VALUE
@@ -253,8 +253,8 @@ ossl_hpke_seal(VALUE self, VALUE aad, VALUE pt)
  * call-seq:
  *    decap(enc, priv, info) -> true
  *
- * Takes the encapsulated key +enc+ (a +String+ produced by the sender's
- * Sender#encap), the receiver's own private key (+OpenSSL::PKey+), and +info+
+ * Takes the encapsulated key +enc+ (a String produced by the sender's
+ * Sender#encap), the receiver's own private key (OpenSSL::PKey), and +info+
  * string (application context information; value that separates the domain in
  * which the key is used), and decapsulates the key to be used in subsequent
  * operations. The +info+ must be identical to the one given to Sender#encap.
@@ -476,8 +476,8 @@ ossl_hpke_suite_alloc(VALUE klass)
  * call-seq:
  *    keygen(suite) -> pkey
  *
- * Takes a +OpenSSL::HPKE::Suite+ and returns a public-private key pair
- * in the form of +OpenSSL::PKey+ for the corresponding cipher suite.
+ * Takes a OpenSSL::HPKE::Suite and returns a public-private key pair
+ * in the form of OpenSSL::PKey for the corresponding cipher suite.
  */
 static VALUE
 ossl_hpke_keygen(VALUE self, VALUE suite)
