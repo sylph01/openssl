@@ -314,7 +314,13 @@ ossl_hpke_suite_initialize(VALUE self, VALUE kem, VALUE kdf, VALUE aead)
     suite = ALLOC(OSSL_HPKE_SUITE);
     *suite = tmp;
     RTYPEDDATA_DATA(self) = suite;
-    return self;
+
+    /*
+     * A Suite is immutable: its algorithm IDs never change, and they are
+     * copied into the Context at construction rather than read back later.
+     * Freeze it so the immutability is enforced and visible to callers.
+     */
+    return rb_obj_freeze(self);
 }
 
 static VALUE

@@ -40,6 +40,13 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
     assert_equal(0x0001, suite.aead_id)
   end
 
+  def test_suite_is_frozen_after_initialization
+    assert_predicate(x25519_suite, :frozen?)
+    assert_raise(FrozenError) do
+      x25519_suite.instance_variable_set(:@foo, 1)
+    end
+  end
+
   def test_suite_new_with_integer_ids_validates_suite
     # Well-formed uint16 IDs that are not a supported HPKE algorithm.
     assert_raise(OpenSSL::HPKE::HPKEError) do
