@@ -77,12 +77,12 @@ static const rb_data_type_t ossl_hpke_suite_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+// Only HPKE base mode (OSSL_HPKE_MODE_BASE) is supported for now
 static VALUE
-ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
+ossl_hpke_ctx_new_sender(VALUE self, VALUE suite)
 {
     ossl_hpke_ctx_t *data;
     OSSL_HPKE_SUITE *suite_st;
-    VALUE mode_table, mode_id;
 
     if (RTYPEDDATA_DATA(self))
         ossl_raise(eHPKEError, "HPKE context is already initialized");
@@ -90,14 +90,11 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
         ossl_raise(eHPKEError, "invalid suite specified");
     GetHpkeSuite(suite, suite_st);
 
-    mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
-    mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
-
     data = ALLOC(ossl_hpke_ctx_t);
     data->ctx = NULL;
     data->suite = *suite_st;
 
-    data->ctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), data->suite,
+    data->ctx = OSSL_HPKE_CTX_new(OSSL_HPKE_MODE_BASE, data->suite,
                                   OSSL_HPKE_ROLE_SENDER, NULL, NULL);
     if (data->ctx == NULL) {
         ruby_xfree(data);
@@ -109,11 +106,10 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE mode, VALUE suite)
 }
 
 static VALUE
-ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
+ossl_hpke_ctx_new_receiver(VALUE self, VALUE suite)
 {
     ossl_hpke_ctx_t *data;
     OSSL_HPKE_SUITE *suite_st;
-    VALUE mode_table, mode_id;
 
     if (RTYPEDDATA_DATA(self))
         ossl_raise(eHPKEError, "HPKE context is already initialized");
@@ -121,14 +117,11 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE mode, VALUE suite)
         ossl_raise(eHPKEError, "invalid suite specified");
     GetHpkeSuite(suite, suite_st);
 
-    mode_table = rb_const_get_at(cContext, rb_intern("MODES"));
-    mode_id = rb_funcall(mode_table, rb_intern("[]"), 1, mode);
-
     data = ALLOC(ossl_hpke_ctx_t);
     data->ctx = NULL;
     data->suite = *suite_st;
 
-    data->ctx = OSSL_HPKE_CTX_new(NUM2INT(mode_id), data->suite,
+    data->ctx = OSSL_HPKE_CTX_new(OSSL_HPKE_MODE_BASE, data->suite,
                                   OSSL_HPKE_ROLE_RECEIVER, NULL, NULL);
     if (data->ctx == NULL) {
         ruby_xfree(data);
@@ -365,11 +358,6 @@ Init_ossl_hpke(void)
     cReceiverContext = rb_define_class_under(cContext, "Receiver", cContext);
     eHPKEError = rb_define_class_under(mHPKE, "HPKEError", eOSSLError);
 
-    /* Context::MODES */
-    VALUE modes = rb_hash_new();
-    rb_hash_aset(modes, ID2SYM(rb_intern("base")), INT2NUM(0x00));
-    rb_define_const(cContext, "MODES", rb_obj_freeze(modes));
-
     rb_define_module_function(mHPKE, "keygen", ossl_hpke_keygen, 1);
 
     /* suite accessors for Suite (read from the wrapped OSSL_HPKE_SUITE) */
@@ -379,12 +367,12 @@ Init_ossl_hpke(void)
     rb_define_method(cSuite, "kdf_id",  ossl_hpke_suite_kdf_id,  0);
     rb_define_method(cSuite, "aead_id", ossl_hpke_suite_aead_id, 0);
 
-    rb_define_method(cSenderContext, "initialize", ossl_hpke_ctx_new_sender, 2);
+    rb_define_method(cSenderContext, "initialize", ossl_hpke_ctx_new_sender, 1);
     rb_define_method(cSenderContext, "encap", ossl_hpke_encap, 2);
     rb_define_method(cSenderContext, "seal",  ossl_hpke_seal,  2);
 
     rb_define_method(cReceiverContext, "initialize",
-                     ossl_hpke_ctx_new_receiver, 2);
+                     ossl_hpke_ctx_new_receiver, 1);
     rb_define_method(cReceiverContext, "decap", ossl_hpke_decap, 3);
     rb_define_method(cReceiverContext, "open",  ossl_hpke_open,  2);
 

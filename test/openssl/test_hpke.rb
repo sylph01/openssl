@@ -131,21 +131,21 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
 
   def test_context_cannot_be_reinitialized
     suite = x25519_suite
-    sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
+    sender = OpenSSL::HPKE::Context::Sender.new(suite)
     assert_raise(OpenSSL::HPKE::HPKEError) do
-      sender.send(:initialize, :base, suite)
+      sender.send(:initialize, suite)
     end
 
-    receiver = OpenSSL::HPKE::Context::Receiver.new(:base, suite)
+    receiver = OpenSSL::HPKE::Context::Receiver.new(suite)
     assert_raise(OpenSSL::HPKE::HPKEError) do
-      receiver.send(:initialize, :base, suite)
+      receiver.send(:initialize, suite)
     end
   end
 
   def test_string_arguments_are_required
     suite = x25519_suite
     pkey = OpenSSL::HPKE.keygen(suite)
-    sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
+    sender = OpenSSL::HPKE::Context::Sender.new(suite)
     assert_raise(TypeError) { sender.encap(12345, "info") }
     assert_raise(TypeError) { sender.encap(public_key_bytes(pkey), 12345) }
   end
@@ -170,9 +170,9 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   # Returns an established [sender, receiver] pair sharing the same context.
   def paired_contexts(suite, info: "shared info")
     pkey = OpenSSL::HPKE.keygen(suite)
-    sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
+    sender = OpenSSL::HPKE::Context::Sender.new(suite)
     enc = sender.encap(public_key_bytes(pkey), info)
-    receiver = OpenSSL::HPKE::Context::Receiver.new(:base, suite)
+    receiver = OpenSSL::HPKE::Context::Receiver.new(suite)
     assert_equal(true, receiver.decap(enc, pkey, info))
     [sender, receiver]
   end
@@ -181,11 +181,11 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
                             message: "hello hpke")
     pkey = OpenSSL::HPKE.keygen(suite)
 
-    sender = OpenSSL::HPKE::Context::Sender.new(:base, suite)
+    sender = OpenSSL::HPKE::Context::Sender.new(suite)
     enc = sender.encap(public_key_bytes(pkey), info)
     ct = sender.seal(aad, message)
 
-    receiver = OpenSSL::HPKE::Context::Receiver.new(:base, suite)
+    receiver = OpenSSL::HPKE::Context::Receiver.new(suite)
     assert_equal(true, receiver.decap(enc, pkey, info))
     assert_equal(message, receiver.open(aad, ct))
   end
