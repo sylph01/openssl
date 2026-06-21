@@ -36,16 +36,10 @@ ossl_hpke_ctx_free(void *ptr)
     ruby_xfree(data);
 }
 
-static size_t
-ossl_hpke_ctx_memsize(const void *ptr)
-{
-    return sizeof(ossl_hpke_ctx_t);
-}
-
 static const rb_data_type_t ossl_hpke_ctx_type = {
     "OpenSSL/HPKE_CTX",
     {
-        0, ossl_hpke_ctx_free, ossl_hpke_ctx_memsize,
+        0, ossl_hpke_ctx_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
