@@ -13,11 +13,6 @@
 # include <openssl/engine.h>
 #endif
 
-#ifdef HAVE_EVP_PKEY_ENCAPSULATE_INIT
-# include <openssl/core_names.h>
-# include <openssl/params.h>
-#endif
-
 /*
  * Classes
  */
@@ -1521,30 +1516,6 @@ ossl_pkey_derive(int argc, VALUE *argv, VALUE self)
 
 #ifdef HAVE_EVP_PKEY_ENCAPSULATE_INIT
 /*
- * X25519, X448 and EC keys only support the RFC 9180 DH-Based KEM (DHKEM).
- * OpenSSL 3.2-3.4 require the operation to be selected explicitly via
- * OSSL_KEM_PARAM_OPERATION before encapsulate/decapsulate; without it the
- * operation fails with "invalid mode". OpenSSL 3.5 defaults to DHKEM. Build
- * the parameter for these key types so the operation works across versions.
- * Returns NULL (use the implementation default) for other key types.
- */
-static const OSSL_PARAM *
-ossl_pkey_kem_params(EVP_PKEY *pkey, OSSL_PARAM *params)
-{
-#ifdef OSSL_KEM_PARAM_OPERATION_DHKEM
-    if (EVP_PKEY_is_a(pkey, "X25519") || EVP_PKEY_is_a(pkey, "X448") ||
-        EVP_PKEY_is_a(pkey, "EC")) {
-        params[0] = OSSL_PARAM_construct_utf8_string(
-            OSSL_KEM_PARAM_OPERATION,
-            (char *)OSSL_KEM_PARAM_OPERATION_DHKEM, 0);
-        params[1] = OSSL_PARAM_construct_end();
-        return params;
-    }
-#endif
-    return NULL;
-}
-
-/*
  * call-seq:
  *    pkey.encapsulate -> [ciphertext, shared_secret]
  *
@@ -1560,14 +1531,13 @@ ossl_pkey_encapsulate(VALUE self)
     EVP_PKEY_CTX *ctx;
     VALUE ciphertext, shared_secret;
     size_t ciphertextlen, shared_secretlen;
-    OSSL_PARAM params[2];
     int state;
 
     GetPKey(self, pkey);
     ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!ctx)
         ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
-    if (EVP_PKEY_encapsulate_init(ctx, ossl_pkey_kem_params(pkey, params)) <= 0) {
+    if (EVP_PKEY_encapsulate_init(ctx, NULL) <= 0) {
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_encapsulate_init");
     }
@@ -1619,7 +1589,6 @@ ossl_pkey_decapsulate(VALUE self, VALUE ciphertext)
     EVP_PKEY_CTX *ctx;
     VALUE shared_secret;
     size_t shared_secretlen;
-    OSSL_PARAM params[2];
     int state;
 
     GetPKey(self, pkey);
@@ -1628,7 +1597,7 @@ ossl_pkey_decapsulate(VALUE self, VALUE ciphertext)
     ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
     if (!ctx)
         ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
-    if (EVP_PKEY_decapsulate_init(ctx, ossl_pkey_kem_params(pkey, params)) <= 0) {
+    if (EVP_PKEY_decapsulate_init(ctx, NULL) <= 0) {
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_decapsulate_init");
     }

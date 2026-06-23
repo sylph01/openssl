@@ -311,8 +311,10 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     # DHKEM (RFC 9180) and the X25519/X448 curves are not FIPS-approved; the
     # KEM is built into the default provider only, not the FIPS module.
     omit_on_fips
-    # EVP_KEM-X25519 / EVP_KEM-X448 were added in OpenSSL 3.2.
-    omit "DHKEM is not supported" unless openssl?(3, 2, 0)
+    # EVP_KEM-X25519 / EVP_KEM-X448 were added in OpenSSL 3.2, but the DHKEM
+    # operation defaults correctly (without an explicit OSSL_KEM_PARAM_OPERATION)
+    # only since OpenSSL 3.5.
+    omit "DHKEM is not supported" unless openssl?(3, 5, 0)
 
     pkey = OpenSSL::PKey.generate_key("X25519")
     raw_public_key = pkey.raw_public_key
@@ -336,8 +338,10 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     # DHKEM (RFC 9180) is built into the default provider only, not the FIPS
     # module.
     omit_on_fips
-    # EVP_KEM-EC (RFC 9180 DHKEM over NIST curves) was added in OpenSSL 3.2.
-    omit "DHKEM is not supported" unless openssl?(3, 2, 0)
+    # EVP_KEM-EC (RFC 9180 DHKEM over NIST curves) was added in OpenSSL 3.2, but
+    # the DHKEM operation defaults correctly (without an explicit
+    # OSSL_KEM_PARAM_OPERATION) only since OpenSSL 3.5.
+    omit "DHKEM is not supported" unless openssl?(3, 5, 0)
 
     pkey = OpenSSL::PKey::EC.generate("prime256v1")
     assert_match(/type_name=EC/, pkey.inspect)
