@@ -308,6 +308,9 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_dhkem_x25519
+    # DHKEM (RFC 9180) and the X25519/X448 curves are not FIPS-approved; the
+    # KEM is built into the default provider only, not the FIPS module.
+    omit_on_fips
     # EVP_KEM-X25519 / EVP_KEM-X448 were added in OpenSSL 3.2.
     omit "DHKEM is not supported" unless openssl?(3, 2, 0)
 
@@ -330,6 +333,9 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_dhkem_ec
+    # DHKEM (RFC 9180) is built into the default provider only, not the FIPS
+    # module.
+    omit_on_fips
     # EVP_KEM-EC (RFC 9180 DHKEM over NIST curves) was added in OpenSSL 3.2.
     omit "DHKEM is not supported" unless openssl?(3, 2, 0)
 
